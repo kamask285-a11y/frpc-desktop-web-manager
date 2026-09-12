@@ -97,6 +97,7 @@ class WebProjectService {
         continue;
       }
       const projectPath = path.join(webRoot, entry.name);
+      this.assertProjectPath(projectPath, webRoot);
       const packageMetadata = await this.readPackageMetadata(projectPath);
       if (!packageMetadata || (await this.repository.findByPath(projectPath))) {
         continue;
@@ -323,7 +324,6 @@ class WebProjectService {
     if (!project) {
       throw new Error("Web project was not found.");
     }
-    this.assertProjectPath(project.path, await this.getRootPath());
     return project;
   }
 
@@ -341,7 +341,6 @@ class WebProjectService {
     projectPath: string
   ): Promise<PackageMetadata | null> {
     try {
-      this.assertProjectPath(projectPath, await this.getRootPath());
       const content = await fs.promises.readFile(
         path.join(projectPath, "package.json"),
         "utf8"
