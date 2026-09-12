@@ -124,6 +124,14 @@ class AppConfigRepository {
     };
   }
 
+  public getWebProjectRoot(): string {
+    return this.getNamespace("web_projects").get("root_path") || "";
+  }
+
+  public saveWebProjectRoot(rootPath: string): void {
+    this.upsert("web_projects", "root_path", "string", rootPath);
+  }
+
   public saveWebGatewayConfig(config: WebGatewayConfig): void {
     this.upsert("web_gateway", "ssh_host", "string", config.sshHost);
     this.upsert("web_gateway", "ssh_port", "integer", String(config.sshPort));

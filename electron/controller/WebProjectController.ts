@@ -44,6 +44,18 @@ class WebProjectController extends BaseController {
     );
   }
 
+  getRootPath(req: ControllerParam) {
+    this.reply(req, this.service.getRootPath(), "getRootPath");
+  }
+
+  updateRootPath(req: ControllerParam) {
+    this.reply(
+      req,
+      this.service.updateRootPath(req.args?.path),
+      "updateRootPath"
+    );
+  }
+
   private reply(
     req: ControllerParam,
     operation: Promise<unknown>,

@@ -163,6 +163,14 @@ export const ipcRouters: IpcRouters = {
     openDirectory: {
       path: "webProject/openDirectory",
       controller: "webProjectController.openDirectory"
+    },
+    getRootPath: {
+      path: "webProject/getRootPath",
+      controller: "webProjectController.getRootPath"
+    },
+    updateRootPath: {
+      path: "webProject/updateRootPath",
+      controller: "webProjectController.updateRootPath"
     }
   },
   WEB_GATEWAY: {

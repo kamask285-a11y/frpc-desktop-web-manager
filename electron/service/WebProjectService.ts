@@ -5,6 +5,7 @@ import os from "os";
 import path from "path";
 import treeKill from "tree-kill";
 import Logger from "../core/Logger";
+import AppConfigRepository from "../repository/AppConfigRepository";
 import WebProjectRepository from "../repository/WebProjectRepository";
 import NetUtils from "../utils/NetUtils";
 
@@ -27,13 +28,54 @@ const SCRIPT_NAME_PATTERN = /^[a-zA-Z0-9:_-]+$/;
 
 class WebProjectService {
   private readonly runtimes = new Map<string, ProjectRuntime>();
+  private cachedWebRoot: string | null = null;
 
   constructor(
     private readonly repository: WebProjectRepository,
-    private readonly webRoot = process.platform === "darwin"
-      ? "/Volumes/Box-1T/Web"
-      : path.join(os.homedir(), "Web")
+    private readonly appConfigRepository: AppConfigRepository,
+    private readonly defaultWebRoot = path.join(os.homedir(), "Web")
   ) {}
+
+  /**
+   * The root is configurable and stored per installation. Installations that
+   * already manage projects keep their existing directory: when no root has
+   * been saved yet, it is derived from the projects already in the database.
+   */
+  async getRootPath(): Promise<string> {
+    if (this.cachedWebRoot) {
+      return this.cachedWebRoot;
+    }
+    const configured = this.appConfigRepository.getWebProjectRoot().trim();
+    if (configured) {
+      this.cachedWebRoot = path.resolve(configured);
+      return this.cachedWebRoot;
+    }
+    const projects = await this.repository.findAll();
+    const derived = projects.length
+      ? path.dirname(path.resolve(projects[0].path))
+      : "";
+    this.cachedWebRoot = path.resolve(derived || this.defaultWebRoot);
+    return this.cachedWebRoot;
+  }
+
+  async updateRootPath(input: string): Promise<string> {
+    const rootPath = path.resolve(String(input || "").trim());
+    if (!path.isAbsolute(rootPath) || rootPath === path.sep) {
+      throw new Error("Web root must be an absolute directory path.");
+    }
+    await fs.promises.mkdir(rootPath, { recursive: true });
+    const stat = await fs.promises.stat(rootPath);
+    if (!stat.isDirectory()) {
+      throw new Error("Web root must be a directory.");
+    }
+    this.appConfigRepository.saveWebProjectRoot(rootPath);
+    this.cachedWebRoot = rootPath;
+    Logger.info(
+      "WebProjectService.updateRootPath",
+      `Web root set to ${rootPath}`
+    );
+    return rootPath;
+  }
 
   async getProjects(scan = true): Promise<WebProjectView[]> {
     if (scan) {
@@ -44,8 +86,9 @@ class WebProjectService {
   }
 
   async scanProjects(): Promise<WebProjectView[]> {
-    await fs.promises.mkdir(this.webRoot, { recursive: true });
-    const entries = await fs.promises.readdir(this.webRoot, {
+    const webRoot = await this.getRootPath();
+    await fs.promises.mkdir(webRoot, { recursive: true });
+    const entries = await fs.promises.readdir(webRoot, {
       withFileTypes: true
     });
 
@@ -53,7 +96,7 @@ class WebProjectService {
       if (!entry.isDirectory() || entry.name.startsWith(".")) {
         continue;
       }
-      const projectPath = path.join(this.webRoot, entry.name);
+      const projectPath = path.join(webRoot, entry.name);
       const packageMetadata = await this.readPackageMetadata(projectPath);
       if (!packageMetadata || (await this.repository.findByPath(projectPath))) {
         continue;
@@ -280,7 +323,7 @@ class WebProjectService {
     if (!project) {
       throw new Error("Web project was not found.");
     }
-    this.assertProjectPath(project.path);
+    this.assertProjectPath(project.path, await this.getRootPath());
     return project;
   }
 
@@ -298,7 +341,7 @@ class WebProjectService {
     projectPath: string
   ): Promise<PackageMetadata | null> {
     try {
-      this.assertProjectPath(projectPath);
+      this.assertProjectPath(projectPath, await this.getRootPath());
       const content = await fs.promises.readFile(
         path.join(projectPath, "package.json"),
         "utf8"
@@ -316,8 +359,8 @@ class WebProjectService {
     }
   }
 
-  private assertProjectPath(projectPath: string): void {
-    const resolvedRoot = path.resolve(this.webRoot);
+  private assertProjectPath(projectPath: string, rootPath: string): void {
+    const resolvedRoot = path.resolve(rootPath);
     const resolvedProject = path.resolve(projectPath);
     if (
       resolvedProject === resolvedRoot ||

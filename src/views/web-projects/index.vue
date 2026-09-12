@@ -8,7 +8,7 @@ import { ipcRouters } from "../../../electron/core/IpcRouter";
 
 defineOptions({ name: "WebProjectsPage" });
 
-const WEB_ROOT = "/Volumes/Box-1T/Web";
+const webRoot = ref("");
 const DOMAIN_PREFIX_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 const { t } = useI18n();
 const projects = ref<WebProjectView[]>([]);
@@ -200,6 +200,7 @@ const runProjectAction = async (
 const loadProjects = async (notify = false) => {
   loading.value = true;
   try {
+    webRoot.value = await request<string>(ipcRouters.WEB_PROJECT.getRootPath);
     projects.value = await request<WebProjectView[]>(
       ipcRouters.WEB_PROJECT.scan
     );
@@ -208,6 +209,31 @@ const loadProjects = async (notify = false) => {
     ElMessage.error((error as Error).message);
   } finally {
     loading.value = false;
+  }
+};
+
+const changeWebRoot = async () => {
+  try {
+    const { value } = await ElMessageBox.prompt(
+      t("webProjects.rootPrompt", { path: webRoot.value }),
+      t("webProjects.rootTitle"),
+      {
+        confirmButtonText: t("common.confirm"),
+        cancelButtonText: t("common.cancel"),
+        inputValue: webRoot.value,
+        inputPattern: /^\/.+|^[A-Za-z]:[\\/].+/,
+        inputErrorMessage: t("webProjects.validation.root"),
+        type: "warning"
+      }
+    );
+    webRoot.value = await request<string>(
+      ipcRouters.WEB_PROJECT.updateRootPath,
+      { path: value }
+    );
+    await loadProjects();
+    ElMessage.success(t("webProjects.message.rootUpdated"));
+  } catch (error) {
+    if (error !== "cancel") ElMessage.error((error as Error).message);
   }
 };
 
@@ -575,14 +601,19 @@ onUnmounted(() => {
     </Breadcrumb>
 
     <div class="app-container-breadcrumb web-project-page" v-loading="loading">
-      <p class="root-hint">{{ t("webProjects.root", { path: WEB_ROOT }) }}</p>
+      <p class="root-hint">
+        {{ t("webProjects.root", { path: webRoot }) }}
+        <el-button link type="primary" @click="changeWebRoot">
+          {{ t("webProjects.rootChange") }}
+        </el-button>
+      </p>
 
       <el-empty
         v-if="!loading && projects.length === 0"
         :description="t('webProjects.emptyTitle')"
       >
         <p class="empty-description">
-          {{ t("webProjects.emptyDescription", { path: WEB_ROOT }) }}
+          {{ t("webProjects.emptyDescription", { path: webRoot }) }}
         </p>
         <el-button type="primary" @click="loadProjects(true)">
           {{ t("webProjects.refresh") }}

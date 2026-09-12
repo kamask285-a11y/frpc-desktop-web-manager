@@ -28,6 +28,10 @@ export default {
   },
   webProjects: {
     root: "Project directory: {path}",
+    rootChange: "Change",
+    rootTitle: "Change Project Directory",
+    rootPrompt:
+      "Current directory: {path}\n\nEnter the absolute path of the new project directory. Only future scans are affected; projects that are already managed stay as they are.",
     refresh: "Scan Projects",
     emptyTitle: "No Node.js projects found",
     emptyDescription:
@@ -138,7 +142,8 @@ export default {
     validation: {
       name: "Enter a project name",
       script: "Select a start script available in package.json",
-      port: "Port must be between 1 and 65535"
+      port: "Port must be between 1 and 65535",
+      root: "Enter an absolute path"
     },
     removeTitle: "Remove from Web Service Manager",
     removeConfirm:
@@ -146,6 +151,7 @@ export default {
     message: {
       scanned: "Project scan complete",
       saved: "Project configuration saved",
+      rootUpdated: "Project directory updated",
       started: "Service started",
       stopped: "Service stopped",
       restarted: "Service restarted",
@@ -661,6 +667,7 @@ export default {
   common: {
     name: "Name",
     cancel: "Cancel",
+    confirm: "Confirm",
     yes: "Y",
     no: "N",
     modify: "Modify",

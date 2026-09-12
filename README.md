@@ -55,11 +55,13 @@
 
 ## Web Service Management
 
-Place Node.js projects under `/Volumes/Box-1T/Web`. A project is discovered when
-its top-level directory contains a `package.json`. Open **Web Services** in the
-sidebar to scan projects, select an npm start script, configure the service port,
-start or stop the process, view logs, and create a TCP or HTTP FRP proxy using the
-project's local port.
+Place Node.js projects under the project root (defaults to `~/Web`; use
+**Change** next to "Project directory" to point it at any absolute path). A
+project is discovered when its top-level directory contains a `package.json`, and
+projects that are already managed keep working when the root changes. Open
+**Web Services** in the sidebar to scan projects, select an npm start script,
+configure the service port, start or stop the process, view logs, and create a
+TCP or HTTP FRP proxy using the project's local port.
 
 The selected port is passed to the project through the `PORT` environment
 variable. Projects should provide at least one npm script; `start`, `dev`, and

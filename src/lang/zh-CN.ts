@@ -28,6 +28,10 @@ export default {
   },
   webProjects: {
     root: "项目目录：{path}",
+    rootChange: "修改",
+    rootTitle: "修改项目目录",
+    rootPrompt:
+      "当前目录：{path}\n\n请输入新的项目目录绝对路径。修改后只影响后续扫描，已管理的项目不受影响。",
     refresh: "扫描项目",
     emptyTitle: "未发现 Node.js 项目",
     emptyDescription:
@@ -137,7 +141,8 @@ export default {
     validation: {
       name: "请输入项目名称",
       script: "请选择 package.json 中存在的启动脚本",
-      port: "端口必须在 1 到 65535 之间"
+      port: "端口必须在 1 到 65535 之间",
+      root: "请输入绝对路径"
     },
     removeTitle: "从 Web 服务管理器移除",
     removeConfirm:
@@ -145,6 +150,7 @@ export default {
     message: {
       scanned: "项目扫描完成",
       saved: "项目配置已保存",
+      rootUpdated: "项目目录已更新",
       started: "服务已启动",
       stopped: "服务已停止",
       restarted: "服务已重启",
@@ -482,6 +488,7 @@ export default {
   common: {
     name: "名称",
     cancel: "取消",
+    confirm: "确定",
     yes: "是",
     no: "否",
     modify: "修改",

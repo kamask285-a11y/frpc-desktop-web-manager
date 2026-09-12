@@ -451,7 +451,10 @@ class FrpcDesktopApp {
     BeanFactory.setBean("frpcProcessService", new FrpcProcessService());
     BeanFactory.setBean(
       "webProjectService",
-      new WebProjectService(BeanFactory.getBean("webProjectRepository"))
+      new WebProjectService(
+        BeanFactory.getBean("webProjectRepository"),
+        BeanFactory.getBean("appConfigRepository")
+      )
     );
     BeanFactory.setBean(
       "proxyService",
