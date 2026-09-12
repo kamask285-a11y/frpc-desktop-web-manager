@@ -1,4 +1,5 @@
 # Repository Guidelines
+
 每完成一件可独立回滚的工作，都必须创建一个对应的 Git commit。一次任务可以有多个有意义的原子提交，但不能把多个无关任务混入同一提交；纯讨论、只读检查且没有文件变化时不创建空提交。
 Git commit 提交信息统一使用中文，简洁准确地描述本次原子变更。
 
@@ -71,5 +72,7 @@ There is currently no automated test script. For normal code changes, run lint a
 The canonical frontend UI development standard is `docs/FRONTEND_UI_STANDARDS.md`. Read and follow it before creating or changing renderer UI, layout, styling, interaction states, icons, or user-facing copy.
 
 The canonical database design and migration document is `docs/DATABASES.md`. Read and follow it before changing persistence models, SQLite schema or migrations, repositories, database paths, or data compatibility behavior.
+
+The canonical standard for Node.js web services managed by this application is `docs/NODE_PROJECT_STANDARD.md`. Read and follow it before creating or changing anything under a managed Web root, and keep it in sync with the scanner, process manager, and public access flow.
 
 Update both `README.md` and `README.zh_CN.md` when changing user-facing setup or behavior. Keep commit subjects short and aligned with the repository's conventional emoji-prefixed history when practical (for example, `🐛 Fix ...`, `✨ Add ...`, or `🔧 Update ...`). Do not commit build artifacts or local application data.

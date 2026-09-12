@@ -130,6 +130,10 @@ record.
 configuration, which is what to use after changing a project's port; the remote
 port is derived from the domain, so the DNS record does not change.
 
+The conventions a new Node.js project must follow (directory layout,
+`package.json`, `PORT`, `/health`, graceful shutdown, plus a minimal template and
+a checklist) are documented in `docs/NODE_PROJECT_STANDARD.md`.
+
 Remote work is performed by `electron/scripts/web-gateway.sh`, which is streamed
 through SSH standard input and installs nothing persistent on the server. The
 remote port only needs to be reachable from the server's own Caddy through

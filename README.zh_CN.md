@@ -119,6 +119,9 @@ DNS 生效后点击“重新验证”，公网访问状态会变为“公网正�
 修改了项目端口或想重跑一次部署时，点击“重新发布”即可按当前配置重新生成 FRP 代理
 和 Caddy 站点文件；远程端口由域名决定，所以 DNS 记录不需要重新添加。
 
+新建 Node.js 项目时需要遵守的约定（目录、`package.json`、`PORT`、`/health`、优雅退出
+等，含最小模板与检查清单）见 `docs/NODE_PROJECT_STANDARD.md`。
+
 远程操作由 `electron/scripts/web-gateway.sh` 完成，该脚本通过 SSH 标准输入直接
 执行，不会在服务器上安装常驻服务；`REMOTE_PORT` 只对服务器本机的 Caddy 开放，
 不需要在云安全组中放行。
