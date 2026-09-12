@@ -120,6 +120,8 @@ export default {
       https: "HTTPS Access",
       deploy: "Configure and Enable Public Access",
       deployed: "FRP and Caddy are deployed. Add the displayed DNS record.",
+      republish: "Republish",
+      republished: "Republished with the current configuration",
       check: "Verify Again",
       checked: "Public access status updated",
       remove: "Disable Public Access",

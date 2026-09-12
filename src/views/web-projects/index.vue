@@ -436,6 +436,27 @@ const publish = async () => {
   }
 };
 
+const republish = async () => {
+  const project = publicProject.value;
+  const domainPrefix = project?.domainPrefix || publicForm.domainPrefix;
+  if (!project || !domainPrefix) return;
+  publicBusy.value = true;
+  try {
+    const result = await request<WebPublicAccessCheck>(
+      ipcRouters.WEB_GATEWAY.publish,
+      { id: project._id, domainPrefix }
+    );
+    publicCheck.value = result;
+    replaceProject(result.project);
+    ElMessage.success(t("webProjects.publicAccess.republished"));
+  } catch (error) {
+    await refreshStatus();
+    ElMessage.error((error as Error).message);
+  } finally {
+    publicBusy.value = false;
+  }
+};
+
 const checkPublicAccess = async (project = publicProject.value) => {
   if (!project) return;
   publicBusy.value = true;
@@ -996,13 +1017,18 @@ onUnmounted(() => {
           </el-button>
           <span v-else></span>
           <div>
-            <el-button
-              v-if="publicProject?.fqdn"
-              :loading="publicBusy"
-              @click="checkPublicAccess()"
-            >
-              {{ t("webProjects.publicAccess.check") }}
-            </el-button>
+            <template v-if="publicProject?.fqdn">
+              <el-button
+                type="primary"
+                :loading="publicBusy"
+                @click="republish"
+              >
+                {{ t("webProjects.publicAccess.republish") }}
+              </el-button>
+              <el-button :loading="publicBusy" @click="checkPublicAccess()">
+                {{ t("webProjects.publicAccess.check") }}
+              </el-button>
+            </template>
             <el-button
               v-else
               type="primary"

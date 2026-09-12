@@ -120,6 +120,8 @@ export default {
       https: "HTTPS 访问",
       deploy: "配置并启用公网访问",
       deployed: "FRP 和 Caddy 已部署，请根据提示配置 DNS",
+      republish: "重新发布",
+      republished: "已按当前配置重新发布",
       check: "重新验证",
       checked: "公网访问状态已更新",
       remove: "取消公网访问",

@@ -1,6 +1,7 @@
 <a name="readme-top"></a>
 
 <!-- PROJECT SHIELDS -->
+
 [![Downloads][downloads-shield]][downloads-url]
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
@@ -28,6 +29,7 @@
 
 <a href="https://trendshift.io/repositories/12489" target="_blank"><img src="https://trendshift.io/api/badge/repositories/12489" alt="luckjiawei%2Ffrpc-desktop | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
 <a href="https://hellogithub.com/repository/b0dc116e9f2e4b8188da5a6d3e1bd8a4" target="_blank"><img src="https://abroad.hellogithub.com/v1/widgets/recommend.svg?rid=b0dc116e9f2e4b8188da5a6d3e1bd8a4&claim_uid=8ZMOhz30mGJAHpa" alt="Featured｜HelloGitHub" style="width: 250px; height: 54px;" width="250" height="54" /></a>
+
 </div>
 
 > 💡 If you prefer a **web UI**, try [Podux](https://github.com/luckjiawei/podux) —
@@ -118,6 +120,10 @@ sites) and the local FRP proxy without deleting the project sources, while
 **Remove from Manager** additionally stops the service and drops the managed
 record.
 
+**Republish** re-creates the FRP proxy and the Caddy site from the current
+configuration, which is what to use after changing a project's port; the remote
+port is derived from the domain, so the DNS record does not change.
+
 Remote work is performed by `electron/scripts/web-gateway.sh`, which is streamed
 through SSH standard input and installs nothing persistent on the server. The
 remote port only needs to be reachable from the server's own Caddy through
@@ -194,8 +200,6 @@ No advertisements allowed!!!
 
 👉👉👉[Click to donate](https://jwinks.com/donate/)👈👈👈
 
-
-
 ## Contributors
 
 <a href="https://github.com/luckjiawei/frpc-desktop/graphs/contributors">
@@ -213,21 +217,12 @@ No advertisements allowed!!!
 <!-- MARKDOWN LINKS & IMAGES -->
 
 [downloads-shield]: https://img.shields.io/github/downloads/luckjiawei/frpc-desktop/total.svg?style=for-the-badge
-
 [downloads-url]: https://github.com/luckjiawei/frpc-desktop/releases
-
 [forks-shield]: https://img.shields.io/github/forks/luckjiawei/frpc-desktop.svg?style=for-the-badge
-
 [forks-url]: https://github.com/luckjiawei/frpc-desktop/network/members
-
 [stars-shield]: https://img.shields.io/github/stars/luckjiawei/frpc-desktop.svg?style=for-the-badge
-
 [stars-url]: https://github.com/luckjiawei/frpc-desktop/stargazers
-
 [issues-shield]: https://img.shields.io/github/issues/luckjiawei/frpc-desktop.svg?style=for-the-badge
-
 [issues-url]: https://github.com/luckjiawei/frpc-desktop/issues
-
 [license-shield]: https://img.shields.io/github/license/luckjiawei/frpc-desktop.svg?style=for-the-badge
-
 [license-url]: https://github.com/luckjiawei/frpc-desktop/blob/master/LICENSE

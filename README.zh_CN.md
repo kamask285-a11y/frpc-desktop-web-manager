@@ -1,6 +1,7 @@
 <a name="readme-top"></a>
 
 <!-- PROJECT SHIELDS -->
+
 [![Downloads][downloads-shield]][downloads-url]
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
@@ -28,6 +29,7 @@
 
 <a href="https://trendshift.io/repositories/12489" target="_blank"><img src="https://trendshift.io/api/badge/repositories/12489" alt="luckjiawei%2Ffrpc-desktop | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
 <a href="https://hellogithub.com/repository/b0dc116e9f2e4b8188da5a6d3e1bd8a4" target="_blank"><img src="https://abroad.hellogithub.com/v1/widgets/recommend.svg?rid=b0dc116e9f2e4b8188da5a6d3e1bd8a4&claim_uid=8ZMOhz30mGJAHpa" alt="Featured｜HelloGitHub" style="width: 250px; height: 54px;" width="250" height="54" /></a>
+
 </div>
 
 > 💡 如果你更喜欢 **Web 界面**，试试 [Podux](https://github.com/luckjiawei/podux) —
@@ -110,13 +112,15 @@ DNS 生效后点击“重新验证”，公网访问状态会变为“公网正�
 服务器 Caddy 站点文件（移动到站点目录下的备份目录）和本地 FRP 代理，但不会删除
 项目源码；“从管理器移除”会在此之上停止服务并移除管理记录。
 
+修改了项目端口或想重跑一次部署时，点击“重新发布”即可按当前配置重新生成 FRP 代理
+和 Caddy 站点文件；远程端口由域名决定，所以 DNS 记录不需要重新添加。
+
 远程操作由 `electron/scripts/web-gateway.sh` 完成，该脚本通过 SSH 标准输入直接
 执行，不会在服务器上安装常驻服务；`REMOTE_PORT` 只对服务器本机的 Caddy 开放，
 不需要在云安全组中放行。
 
 远程端口由完整域名决定，因此同一域名在 Mac 与服务器上会得到相同端口。修改已发布
 项目的域名前缀前必须先取消公网访问，避免新旧配置同时存在。
-
 
 ## 常见问题
 
@@ -161,9 +165,7 @@ DNS 生效后点击“重新验证”，公网访问状态会变为“公网正�
 
 **~~微信扫描加入开源项目交流群~~ 微信群超过200人无法扫码进群 关注公众号进群**
 
-
-
- <img src="screenshots/wechat-qr.png" alt="二维码" width="200"><img src="screenshots/mp_qr.jpg" alt="公众号二维码" width="200">
+<img src="screenshots/wechat-qr.png" alt="二维码" width="200"><img src="screenshots/mp_qr.jpg" alt="公众号二维码" width="200">
 
 ## 演示
 
@@ -196,24 +198,16 @@ DNS 生效后点击“重新验证”，公网访问状态会变为“公网正�
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=luckjiawei/frpc-desktop&type=Date)](https://star-history.com/#luckjiawei/frpc-desktop&Date)
+
 <!-- MARKDOWN LINKS & IMAGES -->
 
 [downloads-shield]: https://img.shields.io/github/downloads/luckjiawei/frpc-desktop/total.svg?style=for-the-badge
-
 [downloads-url]: https://github.com/luckjiawei/frpc-desktop/releases
-
 [forks-shield]: https://img.shields.io/github/forks/luckjiawei/frpc-desktop.svg?style=for-the-badge
-
 [forks-url]: https://github.com/luckjiawei/frpc-desktop/network/members
-
 [stars-shield]: https://img.shields.io/github/stars/luckjiawei/frpc-desktop.svg?style=for-the-badge
-
 [stars-url]: https://github.com/luckjiawei/frpc-desktop/stargazers
-
 [issues-shield]: https://img.shields.io/github/issues/luckjiawei/frpc-desktop.svg?style=for-the-badge
-
 [issues-url]: https://github.com/luckjiawei/frpc-desktop/issues
-
 [license-shield]: https://img.shields.io/github/license/luckjiawei/frpc-desktop.svg?style=for-the-badge
-
 [license-url]: https://github.com/luckjiawei/frpc-desktop/blob/master/LICENSE
