@@ -63,6 +63,65 @@ The selected port is passed to the project through the `PORT` environment
 variable. Projects should provide at least one npm script; `start`, `dev`, and
 `serve` are selected in that order by default.
 
+## Public Access Management
+
+Click **Server Settings** on the **Web Services** page to configure a public
+gateway reachable over SSH (for example a Hong Kong Ubuntu server):
+
+```text
+SSH host: 43.154.60.195
+SSH port: 22
+SSH user: deploy
+SSH identity file: ~/.ssh/xxx (leave empty to use the default SSH keys)
+Base domain: work.199227.xyz
+Public IP: 43.154.60.195
+Caddy sites directory: /etc/caddy/acli.d/sites
+Caddyfile path: /etc/caddy/Caddyfile
+```
+
+Trust the host key and test the connection once. The fingerprint is stored in the
+application data directory (`ssh/known_hosts`) and only applies to this
+application; private keys and server passwords are never written to the database
+or logs.
+
+Then open **Public Access** on a project card and enter a domain prefix. The
+application computes the rest:
+
+```text
+Domain prefix: notes
+Full domain: notes.work.199227.xyz
+Local port: 3000
+FRP remote port: 26556 (SHA-256 of the domain, range 20000-29999)
+```
+
+**Configure and Enable Public Access** starts the local service, creates the TCP
+proxy, waits for the FRP backend, and deploys the Caddy site over SSH followed by
+`caddy fmt`, `caddy validate`, and reload. Failures roll back the created proxy
+and site file and keep the error message.
+
+Only one manual step remains:
+
+```text
+Type: A
+Name: notes
+Value: 43.154.60.195
+```
+
+After DNS propagates, **Re-check** moves the status to online. **Disable Public
+Access** removes the server site file (moved into a backup directory next to the
+sites) and the local FRP proxy without deleting the project sources, while
+**Remove from Manager** additionally stops the service and drops the managed
+record.
+
+Remote work is performed by `electron/scripts/web-gateway.sh`, which is streamed
+through SSH standard input and installs nothing persistent on the server. The
+remote port only needs to be reachable from the server's own Caddy through
+`127.0.0.1`, so it must not be opened in the cloud firewall.
+
+The remote port is derived from the full domain, so the Mac and the server always
+compute the same value. Disable public access before changing the domain prefix
+of a published project so the old and new configurations never coexist.
+
 ## Common Issues
 
 ### macOS universal build fails on better-sqlite3 prebuilds
