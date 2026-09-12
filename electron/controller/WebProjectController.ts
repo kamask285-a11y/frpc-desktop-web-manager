@@ -9,7 +9,7 @@ class WebProjectController extends BaseController {
   }
 
   list(req: ControllerParam) {
-    this.reply(req, this.service.getProjects(), "list");
+    this.reply(req, this.service.getProjects(false), "list");
   }
 
   scan(req: ControllerParam) {
@@ -53,7 +53,11 @@ class WebProjectController extends BaseController {
       .then(data => req.event.reply(req.channel, ResponseUtils.success(data)))
       .catch((error: Error) => {
         Logger.error(`WebProjectController.${action}`, error);
-        req.event.reply(req.channel, ResponseUtils.fail(error));
+        req.event.reply(req.channel, {
+          bizCode: "B2000",
+          data: null,
+          message: error.message
+        } satisfies ApiResponse<null>);
       });
   }
 }
