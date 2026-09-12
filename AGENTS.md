@@ -1,6 +1,12 @@
 # Repository Guidelines
 每完成一件可独立回滚的工作，都必须创建一个对应的 Git commit。一次任务可以有多个有意义的原子提交，但不能把多个无关任务混入同一提交；纯讨论、只读检查且没有文件变化时不创建空提交。
 
+## 本项目二次开发要求
+
+- 本机已经安装了这个软件的版本，用户希望进行二次开发，但必须保留原有应用配置和设置。
+- 使用本开源项目构建出的版本替代之前下载的版本；替换应用本体时不得删除或覆盖用户已有的配置数据。
+- 后续直接基于本项目源码进行二次开发、编译、运行和验证。
+
 ## Project Overview
 
 Frpc-Desktop is a cross-platform Electron application. The renderer uses Vue 3, TypeScript, Vite, Pinia, Vue Router, Element Plus, and vue-i18n. The Electron main process manages frpc processes, local persistence, downloads, system integration, and IPC.
