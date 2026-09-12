@@ -38,6 +38,14 @@ export default {
       error: "Error",
       missing: "Missing"
     },
+    publicStatus: {
+      disabled: "Not Published",
+      deploying: "Deploying",
+      waiting_dns: "Waiting for DNS/HTTPS",
+      online: "Public Online",
+      error: "Publish Error",
+      cleanup_pending: "Cleanup Pending"
+    },
     field: {
       path: "Project Path",
       script: "Start Script",
@@ -53,37 +61,93 @@ export default {
       log: "Logs",
       folder: "Folder",
       open: "Open Service",
-      frp: "Configure FRP",
-      save: "Save"
+      publicAccess: "Public Access",
+      save: "Save",
+      remove: "Remove from Manager"
     },
     editTitle: "Configure Web Service",
     logTitle: "Service Logs: {name}",
     logEmpty: "No logs yet. Start the service to view its output here.",
-    frpTitle: "Create FRP Proxy for {name}",
-    frp: {
-      type: "Proxy Type",
-      tcp: "TCP Port",
-      http: "HTTP Domain",
-      remotePort: "Remote Port",
-      domain: "Domain",
-      domainPlaceholder: "For example, app.example.com",
-      create: "Create Proxy",
-      hint: "The local address will be set to 127.0.0.1:{port}."
+    gateway: {
+      action: "Server Settings",
+      title: "Public Gateway Server",
+      sshSection: "SSH Connection",
+      sshHost: "Server Address",
+      sshPort: "SSH Port",
+      sshUser: "SSH User",
+      identityFile: "SSH Identity File",
+      identityHint:
+        "Only the local path is saved. Private key contents and server passwords are never stored. Leave blank to use default SSH identities.",
+      select: "Select",
+      useSudo: "Use passwordless sudo remotely",
+      publicSection: "Public Domain and Ports",
+      baseDomain: "Base Domain",
+      publicIp: "Server Public IP",
+      remoteRange: "FRP Remote Port Range",
+      caddySection: "Caddy",
+      sitesDirectory: "Site Configuration Directory",
+      configPath: "Caddyfile Path",
+      saved: "Server settings saved",
+      trustHost: "Verify Server Fingerprint",
+      hostKeyTitle: "Verify SSH Server Identity",
+      hostKeyConfirm:
+        "Compare these fingerprints for {host} with your server provider:\n{fingerprints}\n\nAfter confirmation, they will only be trusted by this app.",
+      trust: "Fingerprints Match, Trust",
+      trusted: "SSH server fingerprints saved",
+      test: "Test Connection",
+      connectionReady: "SSH connection and remote privileges are ready",
+      validation: {
+        host: "Enter the SSH server address",
+        port: "Enter a valid SSH port",
+        user: "Enter the SSH user",
+        domain: "Enter the base domain",
+        ip: "Enter the server public IP",
+        path: "Enter a safe absolute path"
+      }
+    },
+    publicAccess: {
+      title: "Public Access: {name}",
+      hint: "This starts the local service, creates a TCP proxy, and deploys the Caddy site to the server over SSH.",
+      prefix: "Domain Prefix",
+      domain: "Full Domain",
+      localPort: "Local Port",
+      remotePort: "FRP Remote Port",
+      dnsTitle: "DNS Record to Add Manually",
+      statusTitle: "Deployment Status",
+      frpBackend: "FRP Backend",
+      caddy: "Caddy Configuration",
+      dns: "DNS Resolution",
+      https: "HTTPS Access",
+      deploy: "Configure and Enable Public Access",
+      deployed: "FRP and Caddy are deployed. Add the displayed DNS record.",
+      check: "Verify Again",
+      checked: "Public access status updated",
+      remove: "Disable Public Access",
+      removeTitle: "Disable Public Access",
+      removeConfirm:
+        "This removes the server Caddy configuration and local FRP proxy for {fqdn}. Project source files are not deleted. Remove the DNS record manually afterward.",
+      removed: "Public access disabled",
+      notConfigured: "Not configured",
+      validation: {
+        prefix:
+          "Use lowercase letters, numbers, and hyphens only; start and end with a letter or number"
+      }
     },
     validation: {
       name: "Enter a project name",
       script: "Select a start script available in package.json",
-      port: "Port must be between 1 and 65535",
-      remotePort: "Enter a valid remote port",
-      domain: "Enter a domain"
+      port: "Port must be between 1 and 65535"
     },
+    removeTitle: "Remove from Web Service Manager",
+    removeConfirm:
+      "This stops and removes {name}. If published, its Caddy configuration and FRP proxy for {fqdn} are also removed. The project source directory is not deleted.",
     message: {
       scanned: "Project scan complete",
       saved: "Project configuration saved",
       started: "Service started",
       stopped: "Service stopped",
       restarted: "Service restarted",
-      proxyCreated: "FRP proxy created"
+      removed: "Removed from the manager; project source files remain"
     }
   },
   home: {

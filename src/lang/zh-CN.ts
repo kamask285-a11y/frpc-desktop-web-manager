@@ -38,6 +38,14 @@ export default {
       error: "运行异常",
       missing: "目录缺失"
     },
+    publicStatus: {
+      disabled: "未发布",
+      deploying: "正在发布",
+      waiting_dns: "等待 DNS/HTTPS",
+      online: "公网正常",
+      error: "发布异常",
+      cleanup_pending: "待清理"
+    },
     field: {
       path: "项目路径",
       script: "启动脚本",
@@ -53,37 +61,92 @@ export default {
       log: "日志",
       folder: "目录",
       open: "打开服务",
-      frp: "配置 FRP",
-      save: "保存"
+      publicAccess: "公网访问",
+      save: "保存",
+      remove: "从管理器移除"
     },
     editTitle: "配置 Web 服务",
     logTitle: "服务日志：{name}",
     logEmpty: "当前暂无日志，启动服务后可在这里查看输出。",
-    frpTitle: "为 {name} 创建 FRP 代理",
-    frp: {
-      type: "代理类型",
-      tcp: "TCP 端口",
-      http: "HTTP 域名",
-      remotePort: "远程端口",
-      domain: "访问域名",
-      domainPlaceholder: "例如 app.example.com",
-      create: "创建代理",
-      hint: "本地地址将自动设置为 127.0.0.1:{port}。"
+    gateway: {
+      action: "服务器设置",
+      title: "公网网关服务器",
+      sshSection: "SSH 连接",
+      sshHost: "服务器地址",
+      sshPort: "SSH 端口",
+      sshUser: "SSH 用户",
+      identityFile: "SSH 私钥文件",
+      identityHint:
+        "仅保存本地路径，不保存私钥内容或服务器密码。留空时使用 SSH 默认密钥。",
+      select: "选择",
+      useSudo: "远程操作使用免密 sudo",
+      publicSection: "公网域名与端口",
+      baseDomain: "基础域名",
+      publicIp: "服务器公网 IP",
+      remoteRange: "FRP 远程端口范围",
+      caddySection: "Caddy",
+      sitesDirectory: "站点配置目录",
+      configPath: "Caddyfile 路径",
+      saved: "服务器设置已保存",
+      trustHost: "确认服务器指纹",
+      hostKeyTitle: "确认 SSH 服务器身份",
+      hostKeyConfirm:
+        "请与服务器提供商显示的 {host} 指纹核对：\n{fingerprints}\n\n确认后将仅供本应用使用。",
+      trust: "指纹一致，信任",
+      trusted: "SSH 服务器指纹已保存",
+      test: "测试连接",
+      connectionReady: "SSH 连接和远程权限均已就绪",
+      validation: {
+        host: "请输入 SSH 服务器地址",
+        port: "请输入有效的 SSH 端口",
+        user: "请输入 SSH 用户",
+        domain: "请输入基础域名",
+        ip: "请输入服务器公网 IP",
+        path: "请输入安全的绝对路径"
+      }
+    },
+    publicAccess: {
+      title: "公网访问：{name}",
+      hint: "将自动启动本地服务、创建 TCP 代理，并通过 SSH 部署服务器 Caddy 站点。",
+      prefix: "域名前缀",
+      domain: "完整域名",
+      localPort: "本地端口",
+      remotePort: "FRP 远程端口",
+      dnsTitle: "需要手动添加的 DNS 记录",
+      statusTitle: "部署状态",
+      frpBackend: "FRP 后端",
+      caddy: "Caddy 配置",
+      dns: "DNS 解析",
+      https: "HTTPS 访问",
+      deploy: "配置并启用公网访问",
+      deployed: "FRP 和 Caddy 已部署，请根据提示配置 DNS",
+      check: "重新验证",
+      checked: "公网访问状态已更新",
+      remove: "取消公网访问",
+      removeTitle: "取消公网访问",
+      removeConfirm:
+        "将删除 {fqdn} 的服务器 Caddy 配置和本地 FRP 代理，项目源码不会删除。请另行手动删除 DNS 记录。",
+      removed: "公网访问已取消",
+      notConfigured: "未配置",
+      validation: {
+        prefix: "只可使用小写字母、数字和连字符，且首尾必须是字母或数字"
+      }
     },
     validation: {
       name: "请输入项目名称",
       script: "请选择 package.json 中存在的启动脚本",
-      port: "端口必须在 1 到 65535 之间",
-      remotePort: "请输入有效的远程端口",
-      domain: "请输入访问域名"
+      port: "端口必须在 1 到 65535 之间"
     },
+    removeTitle: "从 Web 服务管理器移除",
+    removeConfirm:
+      "将停止并移除 {name}。如已发布，将同步清理 {fqdn} 的 Caddy 配置和 FRP 代理。项目源码目录不会删除。",
     message: {
       scanned: "项目扫描完成",
       saved: "项目配置已保存",
       started: "服务已启动",
       stopped: "服务已停止",
       restarted: "服务已重启",
-      proxyCreated: "FRP 代理已创建"
+      removed: "已从管理器移除，项目源码仍保留"
     }
   },
   home: {

@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import Breadcrumb from "@/layout/compoenets/Breadcrumb.vue";
 import { on, send } from "@/utils/ipcUtils";
-import { ElMessage, FormInstance, FormRules } from "element-plus";
+import { ElMessage, ElMessageBox, FormInstance, FormRules } from "element-plus";
 import { computed, onMounted, onUnmounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { ipcRouters } from "../../../electron/core/IpcRouter";
@@ -9,11 +9,14 @@ import { ipcRouters } from "../../../electron/core/IpcRouter";
 defineOptions({ name: "WebProjectsPage" });
 
 const WEB_ROOT = "/Volumes/Box-1T/Web";
+const DOMAIN_PREFIX_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 const { t } = useI18n();
 const projects = ref<WebProjectView[]>([]);
 const loading = ref(false);
 const busyIds = ref<string[]>([]);
+
 const editVisible = ref(false);
+const editSaving = ref(false);
 const editFormRef = ref<FormInstance>();
 const editForm = reactive<WebProjectUpdate>({
   _id: "",
@@ -30,13 +33,33 @@ const logVisible = ref(false);
 const logProject = ref<WebProjectView | null>(null);
 const logContent = ref("");
 
-const frpVisible = ref(false);
-const frpProject = ref<WebProjectView | null>(null);
-const frpForm = reactive({
-  type: "tcp" as "tcp" | "http",
-  remotePort: 10000,
-  domain: ""
+const gatewayVisible = ref(false);
+const gatewaySaving = ref(false);
+const gatewayTesting = ref(false);
+const gatewayTrusting = ref(false);
+const gatewayFormRef = ref<FormInstance>();
+const gatewayResult = ref<WebGatewayConnectionResult | null>(null);
+const gatewayForm = reactive<WebGatewayConfig>({
+  sshHost: "43.154.60.195",
+  sshPort: 22,
+  sshUser: "",
+  identityFile: "",
+  baseDomain: "work.199227.xyz",
+  publicIp: "43.154.60.195",
+  remotePortMin: 20000,
+  remotePortMax: 29999,
+  caddySitesDirectory: "/etc/caddy/acli.d/sites",
+  caddyConfigPath: "/etc/caddy/Caddyfile",
+  useSudo: true
 });
+
+const publicVisible = ref(false);
+const publicBusy = ref(false);
+const publicFormRef = ref<FormInstance>();
+const publicProject = ref<WebProjectView | null>(null);
+const publicPreview = ref<WebPublicAccessPreview | null>(null);
+const publicCheck = ref<WebPublicAccessCheck | null>(null);
+const publicForm = reactive({ domainPrefix: "" });
 
 const editRules = reactive<FormRules>({
   name: [
@@ -65,6 +88,72 @@ const editRules = reactive<FormRules>({
   ]
 });
 
+const gatewayRules = reactive<FormRules>({
+  sshHost: [
+    {
+      required: true,
+      message: t("webProjects.gateway.validation.host"),
+      trigger: "blur"
+    }
+  ],
+  sshPort: [
+    {
+      type: "number",
+      required: true,
+      min: 1,
+      max: 65535,
+      message: t("webProjects.gateway.validation.port"),
+      trigger: "change"
+    }
+  ],
+  sshUser: [
+    {
+      required: true,
+      message: t("webProjects.gateway.validation.user"),
+      trigger: "blur"
+    }
+  ],
+  baseDomain: [
+    {
+      required: true,
+      message: t("webProjects.gateway.validation.domain"),
+      trigger: "blur"
+    }
+  ],
+  publicIp: [
+    {
+      required: true,
+      message: t("webProjects.gateway.validation.ip"),
+      trigger: "blur"
+    }
+  ],
+  caddySitesDirectory: [
+    {
+      required: true,
+      message: t("webProjects.gateway.validation.path"),
+      trigger: "blur"
+    }
+  ],
+  caddyConfigPath: [
+    {
+      required: true,
+      message: t("webProjects.gateway.validation.path"),
+      trigger: "blur"
+    }
+  ]
+});
+
+const publicRules = reactive<FormRules>({
+  domainPrefix: [
+    {
+      required: true,
+      pattern: DOMAIN_PREFIX_PATTERN,
+      message: t("webProjects.publicAccess.validation.prefix"),
+      trigger: "blur"
+    }
+  ]
+});
+
 const request = <T,>(router: IpcRouter, params?: unknown): Promise<T> =>
   new Promise((resolve, reject) => {
     let cleanup = () => {};
@@ -86,9 +175,8 @@ const replaceProject = (updated: WebProjectView) => {
   const index = projects.value.findIndex(
     project => project._id === updated._id
   );
-  if (index >= 0) {
-    projects.value[index] = updated;
-  }
+  if (index >= 0) projects.value[index] = updated;
+  if (publicProject.value?._id === updated._id) publicProject.value = updated;
 };
 
 const runProjectAction = async (
@@ -128,9 +216,7 @@ const refreshStatus = async () => {
     projects.value = await request<WebProjectView[]>(
       ipcRouters.WEB_PROJECT.list
     );
-    if (logVisible.value && logProject.value) {
-      await loadLog(logProject.value);
-    }
+    if (logVisible.value && logProject.value) await loadLog(logProject.value);
   } catch {
     // Background refresh stays quiet; explicit actions surface errors.
   }
@@ -149,6 +235,7 @@ const openEdit = (project: WebProjectView) => {
 
 const saveProject = async () => {
   if (!(await editFormRef.value?.validate())) return;
+  editSaving.value = true;
   try {
     const updated = await request<WebProjectView>(
       ipcRouters.WEB_PROJECT.update,
@@ -159,6 +246,8 @@ const saveProject = async () => {
     ElMessage.success(t("webProjects.message.saved"));
   } catch (error) {
     ElMessage.error((error as Error).message);
+  } finally {
+    editSaving.value = false;
   }
 };
 
@@ -189,100 +278,256 @@ const openDirectory = async (project: WebProjectView) => {
   }
 };
 
-const openService = async (project: WebProjectView) => {
+const openUrl = async (url: string) => {
   try {
-    await request<void>(ipcRouters.SYSTEM.openUrl, {
-      url: `http://127.0.0.1:${project.port}`
-    });
+    await request<void>(ipcRouters.SYSTEM.openUrl, { url });
   } catch (error) {
     ElMessage.error((error as Error).message);
   }
 };
 
-const openFrp = (project: WebProjectView) => {
-  frpProject.value = project;
-  frpForm.type = "tcp";
-  frpForm.remotePort = Math.min(65535, project.port + 10000);
-  frpForm.domain = "";
-  frpVisible.value = true;
+const loadGateway = async () => {
+  const config = await request<WebGatewayConfig>(
+    ipcRouters.WEB_GATEWAY.getConfig
+  );
+  Object.assign(gatewayForm, config);
 };
 
-const createFrpProxy = async () => {
-  const project = frpProject.value;
-  if (!project) return;
-  if (
-    frpForm.type === "tcp" &&
-    (!Number.isInteger(frpForm.remotePort) ||
-      frpForm.remotePort < 1 ||
-      frpForm.remotePort > 65535)
-  ) {
-    ElMessage.warning(t("webProjects.validation.remotePort"));
-    return;
+const openGateway = async () => {
+  gatewayResult.value = null;
+  try {
+    await loadGateway();
+    gatewayVisible.value = true;
+  } catch (error) {
+    ElMessage.error((error as Error).message);
   }
-  if (frpForm.type === "http" && !frpForm.domain.trim()) {
-    ElMessage.warning(t("webProjects.validation.domain"));
-    return;
-  }
+};
 
-  const safeName =
-    project.name
-      .toLowerCase()
-      .replace(/[^a-z0-9_-]+/g, "-")
-      .replace(/^-|-$/g, "") || `web-${project.port}`;
-  const proxy: FrpcProxy = {
-    _id: "",
-    name: `web-${safeName}`,
-    type: frpForm.type,
-    localIP: "127.0.0.1",
-    localPort: String(project.port),
-    remotePort: String(frpForm.remotePort),
-    customDomains: frpForm.type === "http" ? [frpForm.domain.trim()] : [""],
-    locations: [""],
-    hostHeaderRewrite: "",
-    visitorsModel: "visitors",
-    serverUser: "",
-    serverName: "",
-    secretKey: "",
-    bindAddr: "",
-    bindPort: null,
-    subdomain: "",
-    basicAuth: false,
-    httpUser: "",
-    httpPassword: "",
-    fallbackTo: "",
-    fallbackTimeoutMs: 500,
-    https2http: false,
-    https2httpCaFile: "",
-    https2httpKeyFile: "",
-    keepTunnelOpen: false,
-    status: 1,
-    transport: {
-      useEncryption: false,
-      useCompression: false,
-      proxyProtocolVersion: ""
+const saveGateway = async (notify = true) => {
+  if (!(await gatewayFormRef.value?.validate())) return false;
+  gatewaySaving.value = true;
+  try {
+    const config = await request<WebGatewayConfig>(
+      ipcRouters.WEB_GATEWAY.saveConfig,
+      { ...gatewayForm }
+    );
+    Object.assign(gatewayForm, config);
+    if (notify) ElMessage.success(t("webProjects.gateway.saved"));
+    return true;
+  } catch (error) {
+    ElMessage.error((error as Error).message);
+    return false;
+  } finally {
+    gatewaySaving.value = false;
+  }
+};
+
+const selectIdentityFile = async () => {
+  try {
+    const result = await request<{ canceled: boolean; path: string }>(
+      ipcRouters.SYSTEM.selectLocalFile,
+      { name: t("webProjects.gateway.identityFile"), extensions: ["*"] }
+    );
+    if (!result.canceled) gatewayForm.identityFile = result.path;
+  } catch (error) {
+    ElMessage.error((error as Error).message);
+  }
+};
+
+const trustHostKey = async () => {
+  if (!(await saveGateway(false))) return;
+  gatewayTrusting.value = true;
+  try {
+    const scan = await request<WebGatewayHostKeyScan>(
+      ipcRouters.WEB_GATEWAY.scanHostKey
+    );
+    const fingerprints = scan.keys
+      .map(key => `${key.algorithm}: ${key.fingerprint}`)
+      .join("\n");
+    await ElMessageBox.confirm(
+      t("webProjects.gateway.hostKeyConfirm", {
+        host: scan.host,
+        fingerprints
+      }),
+      t("webProjects.gateway.hostKeyTitle"),
+      {
+        confirmButtonText: t("webProjects.gateway.trust"),
+        cancelButtonText: t("common.cancel"),
+        type: "warning"
+      }
+    );
+    await request<WebGatewayHostKeyScan>(ipcRouters.WEB_GATEWAY.trustHostKey);
+    ElMessage.success(t("webProjects.gateway.trusted"));
+  } catch (error) {
+    if (error !== "cancel") ElMessage.error((error as Error).message);
+  } finally {
+    gatewayTrusting.value = false;
+  }
+};
+
+const testGateway = async () => {
+  if (!(await saveGateway(false))) return;
+  gatewayTesting.value = true;
+  gatewayResult.value = null;
+  try {
+    gatewayResult.value = await request<WebGatewayConnectionResult>(
+      ipcRouters.WEB_GATEWAY.testConnection
+    );
+    if (gatewayResult.value.sudoReady) {
+      ElMessage.success(t("webProjects.gateway.connectionReady"));
     }
-  };
-
-  try {
-    await request<FrpcProxy>(ipcRouters.PROXY.createProxy, proxy);
-    frpVisible.value = false;
-    ElMessage.success(t("webProjects.message.proxyCreated"));
   } catch (error) {
+    ElMessage.error((error as Error).message);
+  } finally {
+    gatewayTesting.value = false;
+  }
+};
+
+const defaultPrefix = (project: WebProjectView) =>
+  project.name
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 63) || `web-${project.port}`;
+
+const refreshPreview = async () => {
+  const project = publicProject.value;
+  if (!project || !DOMAIN_PREFIX_PATTERN.test(publicForm.domainPrefix)) {
+    publicPreview.value = null;
+    return;
+  }
+  try {
+    publicPreview.value = await request<WebPublicAccessPreview>(
+      ipcRouters.WEB_GATEWAY.preview,
+      { id: project._id, domainPrefix: publicForm.domainPrefix }
+    );
+  } catch (error) {
+    publicPreview.value = null;
     ElMessage.error((error as Error).message);
   }
 };
 
-const statusType = (status: WebProjectRuntimeStatus) => {
+const openPublicAccess = async (project: WebProjectView) => {
+  publicProject.value = project;
+  publicForm.domainPrefix = project.domainPrefix || defaultPrefix(project);
+  publicPreview.value = null;
+  publicCheck.value = null;
+  publicVisible.value = true;
+  await refreshPreview();
+};
+
+const publish = async () => {
+  const project = publicProject.value;
+  if (!project || !(await publicFormRef.value?.validate())) return;
+  publicBusy.value = true;
+  try {
+    const result = await request<WebPublicAccessCheck>(
+      ipcRouters.WEB_GATEWAY.publish,
+      { id: project._id, domainPrefix: publicForm.domainPrefix }
+    );
+    publicCheck.value = result;
+    replaceProject(result.project);
+    ElMessage.success(t("webProjects.publicAccess.deployed"));
+  } catch (error) {
+    await refreshStatus();
+    ElMessage.error((error as Error).message);
+  } finally {
+    publicBusy.value = false;
+  }
+};
+
+const checkPublicAccess = async (project = publicProject.value) => {
+  if (!project) return;
+  publicBusy.value = true;
+  try {
+    const result = await request<WebPublicAccessCheck>(
+      ipcRouters.WEB_GATEWAY.check,
+      { id: project._id }
+    );
+    publicCheck.value = result;
+    replaceProject(result.project);
+    ElMessage.success(t("webProjects.publicAccess.checked"));
+  } catch (error) {
+    await refreshStatus();
+    ElMessage.error((error as Error).message);
+  } finally {
+    publicBusy.value = false;
+  }
+};
+
+const unpublish = async (project: WebProjectView) => {
+  try {
+    await ElMessageBox.confirm(
+      t("webProjects.publicAccess.removeConfirm", { fqdn: project.fqdn }),
+      t("webProjects.publicAccess.removeTitle"),
+      {
+        confirmButtonText: t("webProjects.publicAccess.remove"),
+        cancelButtonText: t("common.cancel"),
+        type: "warning"
+      }
+    );
+    publicBusy.value = true;
+    const updated = await request<WebProjectView>(
+      ipcRouters.WEB_GATEWAY.unpublish,
+      { id: project._id }
+    );
+    replaceProject(updated);
+    publicVisible.value = false;
+    ElMessage.success(t("webProjects.publicAccess.removed"));
+  } catch (error) {
+    if (error !== "cancel") ElMessage.error((error as Error).message);
+  } finally {
+    publicBusy.value = false;
+  }
+};
+
+const removeProject = async (project: WebProjectView) => {
+  try {
+    await ElMessageBox.confirm(
+      t("webProjects.removeConfirm", {
+        name: project.name,
+        fqdn: project.fqdn || t("webProjects.publicAccess.notConfigured")
+      }),
+      t("webProjects.removeTitle"),
+      {
+        confirmButtonText: t("webProjects.action.remove"),
+        cancelButtonText: t("common.cancel"),
+        type: "warning"
+      }
+    );
+    busyIds.value.push(project._id);
+    await request<void>(ipcRouters.WEB_GATEWAY.removeProject, {
+      id: project._id
+    });
+    projects.value = projects.value.filter(item => item._id !== project._id);
+    ElMessage.success(t("webProjects.message.removed"));
+  } catch (error) {
+    if (error !== "cancel") ElMessage.error((error as Error).message);
+  } finally {
+    busyIds.value = busyIds.value.filter(id => id !== project._id);
+  }
+};
+
+const runtimeStatusType = (status: WebProjectRuntimeStatus) => {
   if (status === "running") return "success";
   if (status === "error" || status === "missing") return "danger";
   return "info";
 };
 
+const publicStatusType = (status: WebPublicAccessStatus) => {
+  if (status === "online") return "success";
+  if (status === "deploying" || status === "waiting_dns") return "warning";
+  if (status === "error" || status === "cleanup_pending") return "danger";
+  return "info";
+};
+
+const yesNoType = (ready: boolean) => (ready ? "success" : "info");
 const isBusy = (project: WebProjectView) => busyIds.value.includes(project._id);
 let refreshTimer: ReturnType<typeof setInterval> | null = null;
 
 onMounted(async () => {
   await loadProjects();
+  await loadGateway().catch(() => {});
   refreshTimer = setInterval(refreshStatus, 2000);
 });
 
@@ -294,9 +539,18 @@ onUnmounted(() => {
 <template>
   <div class="main">
     <Breadcrumb>
-      <el-button type="primary" :loading="loading" @click="loadProjects(true)">
-        {{ t("webProjects.refresh") }}
-      </el-button>
+      <div class="toolbar-actions">
+        <el-button @click="openGateway">
+          {{ t("webProjects.gateway.action") }}
+        </el-button>
+        <el-button
+          type="primary"
+          :loading="loading"
+          @click="loadProjects(true)"
+        >
+          {{ t("webProjects.refresh") }}
+        </el-button>
+      </div>
     </Breadcrumb>
 
     <div class="app-container-breadcrumb web-project-page" v-loading="loading">
@@ -325,9 +579,19 @@ onUnmounted(() => {
               <h2>{{ project.name }}</h2>
               <p :title="project.path">{{ project.path }}</p>
             </div>
-            <el-tag :type="statusType(project.status)" effect="light">
-              {{ t(`webProjects.status.${project.status}`) }}
-            </el-tag>
+            <div class="status-tags">
+              <el-tag :type="runtimeStatusType(project.status)" effect="light">
+                {{ t(`webProjects.status.${project.status}`) }}
+              </el-tag>
+              <el-tag
+                :type="publicStatusType(project.publicAccessStatus)"
+                effect="plain"
+              >
+                {{
+                  t(`webProjects.publicStatus.${project.publicAccessStatus}`)
+                }}
+              </el-tag>
+            </div>
           </div>
 
           <dl class="project-meta">
@@ -345,9 +609,22 @@ onUnmounted(() => {
             </div>
           </dl>
 
+          <div v-if="project.fqdn" class="public-summary">
+            <div>
+              <span>{{ t("webProjects.publicAccess.domain") }}</span>
+              <button type="button" @click="openUrl(`https://${project.fqdn}`)">
+                {{ project.fqdn }}
+              </button>
+            </div>
+            <div>
+              <span>{{ t("webProjects.publicAccess.remotePort") }}</span>
+              <strong>{{ project.remotePort }}</strong>
+            </div>
+          </div>
+
           <el-alert
-            v-if="project.lastError"
-            :title="project.lastError"
+            v-if="project.lastError || project.lastPublicAccessError"
+            :title="project.lastError || project.lastPublicAccessError || ''"
             type="error"
             :closable="false"
             show-icon
@@ -397,13 +674,16 @@ onUnmounted(() => {
             >
               {{ t("webProjects.action.restart") }}
             </el-button>
-            <el-button @click="openEdit(project)">
-              {{ t("webProjects.action.edit") }}
+            <el-button @click="openPublicAccess(project)">
+              {{ t("webProjects.action.publicAccess") }}
             </el-button>
             <el-dropdown trigger="click">
               <el-button>{{ t("common.more") }}</el-button>
               <template #dropdown>
                 <el-dropdown-menu>
+                  <el-dropdown-item @click="openEdit(project)">
+                    {{ t("webProjects.action.edit") }}
+                  </el-dropdown-item>
                   <el-dropdown-item @click="openLog(project)">
                     {{ t("webProjects.action.log") }}
                   </el-dropdown-item>
@@ -412,12 +692,23 @@ onUnmounted(() => {
                   </el-dropdown-item>
                   <el-dropdown-item
                     :disabled="project.status !== 'running'"
-                    @click="openService(project)"
+                    @click="openUrl(`http://127.0.0.1:${project.port}`)"
                   >
                     {{ t("webProjects.action.open") }}
                   </el-dropdown-item>
-                  <el-dropdown-item divided @click="openFrp(project)">
-                    {{ t("webProjects.action.frp") }}
+                  <el-dropdown-item
+                    v-if="project.fqdn"
+                    divided
+                    @click="unpublish(project)"
+                  >
+                    {{ t("webProjects.publicAccess.remove") }}
+                  </el-dropdown-item>
+                  <el-dropdown-item
+                    :divided="!project.fqdn"
+                    class="danger-item"
+                    @click="removeProject(project)"
+                  >
+                    {{ t("webProjects.action.remove") }}
                   </el-dropdown-item>
                 </el-dropdown-menu>
               </template>
@@ -470,9 +761,258 @@ onUnmounted(() => {
         <el-button @click="editVisible = false">{{
           t("common.cancel")
         }}</el-button>
-        <el-button type="primary" @click="saveProject">
+        <el-button type="primary" :loading="editSaving" @click="saveProject">
           {{ t("webProjects.action.save") }}
         </el-button>
+      </template>
+    </el-drawer>
+
+    <el-drawer
+      v-model="gatewayVisible"
+      :title="t('webProjects.gateway.title')"
+      size="520px"
+    >
+      <el-form
+        ref="gatewayFormRef"
+        :model="gatewayForm"
+        :rules="gatewayRules"
+        label-position="top"
+      >
+        <h2 class="h2">{{ t("webProjects.gateway.sshSection") }}</h2>
+        <el-row :gutter="12">
+          <el-col :span="16">
+            <el-form-item
+              prop="sshHost"
+              :label="t('webProjects.gateway.sshHost')"
+            >
+              <el-input v-model="gatewayForm.sshHost" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item
+              prop="sshPort"
+              :label="t('webProjects.gateway.sshPort')"
+            >
+              <el-input-number
+                v-model="gatewayForm.sshPort"
+                :min="1"
+                :max="65535"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-form-item prop="sshUser" :label="t('webProjects.gateway.sshUser')">
+          <el-input v-model="gatewayForm.sshUser" />
+        </el-form-item>
+        <el-form-item :label="t('webProjects.gateway.identityFile')">
+          <el-input v-model="gatewayForm.identityFile">
+            <template #append>
+              <el-button @click="selectIdentityFile">
+                {{ t("webProjects.gateway.select") }}
+              </el-button>
+            </template>
+          </el-input>
+          <p class="form-help">{{ t("webProjects.gateway.identityHint") }}</p>
+        </el-form-item>
+        <el-form-item :label="t('webProjects.gateway.useSudo')">
+          <el-switch v-model="gatewayForm.useSudo" />
+        </el-form-item>
+
+        <h2 class="h2">{{ t("webProjects.gateway.publicSection") }}</h2>
+        <el-form-item
+          prop="baseDomain"
+          :label="t('webProjects.gateway.baseDomain')"
+        >
+          <el-input v-model="gatewayForm.baseDomain" />
+        </el-form-item>
+        <el-form-item
+          prop="publicIp"
+          :label="t('webProjects.gateway.publicIp')"
+        >
+          <el-input v-model="gatewayForm.publicIp" />
+        </el-form-item>
+        <el-form-item :label="t('webProjects.gateway.remoteRange')">
+          <el-input
+            :model-value="`${gatewayForm.remotePortMin}-${gatewayForm.remotePortMax}`"
+            disabled
+          />
+        </el-form-item>
+
+        <h2 class="h2">{{ t("webProjects.gateway.caddySection") }}</h2>
+        <el-form-item
+          prop="caddySitesDirectory"
+          :label="t('webProjects.gateway.sitesDirectory')"
+        >
+          <el-input v-model="gatewayForm.caddySitesDirectory" />
+        </el-form-item>
+        <el-form-item
+          prop="caddyConfigPath"
+          :label="t('webProjects.gateway.configPath')"
+        >
+          <el-input v-model="gatewayForm.caddyConfigPath" />
+        </el-form-item>
+
+        <el-alert
+          v-if="gatewayResult"
+          :title="gatewayResult.message"
+          :type="gatewayResult.sudoReady ? 'success' : 'warning'"
+          :closable="false"
+          show-icon
+        />
+      </el-form>
+      <template #footer>
+        <div class="drawer-footer">
+          <div>
+            <el-button :loading="gatewayTrusting" @click="trustHostKey">
+              {{ t("webProjects.gateway.trustHost") }}
+            </el-button>
+            <el-button :loading="gatewayTesting" @click="testGateway">
+              {{ t("webProjects.gateway.test") }}
+            </el-button>
+          </div>
+          <div>
+            <el-button @click="gatewayVisible = false">{{
+              t("common.cancel")
+            }}</el-button>
+            <el-button
+              type="primary"
+              :loading="gatewaySaving"
+              @click="saveGateway()"
+            >
+              {{ t("webProjects.action.save") }}
+            </el-button>
+          </div>
+        </div>
+      </template>
+    </el-drawer>
+
+    <el-drawer
+      v-model="publicVisible"
+      :title="
+        t('webProjects.publicAccess.title', { name: publicProject?.name || '' })
+      "
+      size="500px"
+    >
+      <el-form
+        ref="publicFormRef"
+        :model="publicForm"
+        :rules="publicRules"
+        label-position="top"
+      >
+        <el-alert
+          :title="t('webProjects.publicAccess.hint')"
+          type="info"
+          :closable="false"
+          class="mb-4"
+        />
+        <el-form-item
+          prop="domainPrefix"
+          :label="t('webProjects.publicAccess.prefix')"
+        >
+          <el-input
+            v-model="publicForm.domainPrefix"
+            :disabled="Boolean(publicProject?.fqdn)"
+            @blur="refreshPreview"
+          >
+            <template #append>.{{ gatewayForm.baseDomain }}</template>
+          </el-input>
+        </el-form-item>
+
+        <div v-if="publicPreview" class="preview-card">
+          <dl>
+            <div>
+              <dt>{{ t("webProjects.publicAccess.domain") }}</dt>
+              <dd>{{ publicPreview.fqdn }}</dd>
+            </div>
+            <div>
+              <dt>{{ t("webProjects.publicAccess.localPort") }}</dt>
+              <dd>{{ publicPreview.localPort }}</dd>
+            </div>
+            <div>
+              <dt>{{ t("webProjects.publicAccess.remotePort") }}</dt>
+              <dd>{{ publicPreview.remotePort }}</dd>
+            </div>
+          </dl>
+          <h3>{{ t("webProjects.publicAccess.dnsTitle") }}</h3>
+          <p class="dns-record">
+            A&nbsp;&nbsp;{{ publicPreview.dnsName }}&nbsp;&nbsp;{{
+              publicPreview.dnsValue
+            }}
+          </p>
+        </div>
+
+        <div v-if="publicProject?.fqdn" class="status-panel">
+          <h2 class="h2">{{ t("webProjects.publicAccess.statusTitle") }}</h2>
+          <el-descriptions :column="1" border>
+            <el-descriptions-item
+              :label="t('webProjects.publicAccess.frpBackend')"
+            >
+              <el-tag :type="yesNoType(Boolean(publicCheck?.backendReady))">
+                {{ t(publicCheck?.backendReady ? "common.yes" : "common.no") }}
+              </el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item :label="t('webProjects.publicAccess.caddy')">
+              <el-tag
+                :type="
+                  yesNoType(
+                    Boolean(
+                      publicCheck?.caddyConfigReady && publicCheck?.caddyActive
+                    )
+                  )
+                "
+              >
+                {{
+                  t(
+                    publicCheck?.caddyConfigReady && publicCheck?.caddyActive
+                      ? "common.yes"
+                      : "common.no"
+                  )
+                }}
+              </el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item :label="t('webProjects.publicAccess.dns')">
+              <el-tag :type="yesNoType(Boolean(publicCheck?.dnsReady))">
+                {{ t(publicCheck?.dnsReady ? "common.yes" : "common.no") }}
+              </el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item :label="t('webProjects.publicAccess.https')">
+              <el-tag :type="yesNoType(Boolean(publicCheck?.httpsReady))">
+                {{ t(publicCheck?.httpsReady ? "common.yes" : "common.no") }}
+              </el-tag>
+            </el-descriptions-item>
+          </el-descriptions>
+        </div>
+      </el-form>
+      <template #footer>
+        <div class="drawer-footer">
+          <el-button
+            v-if="publicProject?.fqdn"
+            type="danger"
+            plain
+            :loading="publicBusy"
+            @click="unpublish(publicProject)"
+          >
+            {{ t("webProjects.publicAccess.remove") }}
+          </el-button>
+          <span v-else></span>
+          <div>
+            <el-button
+              v-if="publicProject?.fqdn"
+              :loading="publicBusy"
+              @click="checkPublicAccess()"
+            >
+              {{ t("webProjects.publicAccess.check") }}
+            </el-button>
+            <el-button
+              v-else
+              type="primary"
+              :loading="publicBusy"
+              @click="publish"
+            >
+              {{ t("webProjects.publicAccess.deploy") }}
+            </el-button>
+          </div>
+        </div>
       </template>
     </el-drawer>
 
@@ -484,56 +1024,6 @@ onUnmounted(() => {
       <pre v-if="logContent" class="log-content">{{ logContent }}</pre>
       <el-empty v-else :description="t('webProjects.logEmpty')" />
     </el-drawer>
-
-    <el-dialog
-      v-model="frpVisible"
-      :title="t('webProjects.frpTitle', { name: frpProject?.name || '' })"
-      width="480px"
-    >
-      <el-alert
-        :title="t('webProjects.frp.hint', { port: frpProject?.port || '' })"
-        type="info"
-        :closable="false"
-        class="mb-4"
-      />
-      <el-form :model="frpForm" label-position="top">
-        <el-form-item :label="t('webProjects.frp.type')">
-          <el-radio-group v-model="frpForm.type">
-            <el-radio-button value="tcp">{{
-              t("webProjects.frp.tcp")
-            }}</el-radio-button>
-            <el-radio-button value="http">{{
-              t("webProjects.frp.http")
-            }}</el-radio-button>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item
-          v-if="frpForm.type === 'tcp'"
-          :label="t('webProjects.frp.remotePort')"
-        >
-          <el-input-number
-            v-model="frpForm.remotePort"
-            :min="1"
-            :max="65535"
-            class="w-full"
-          />
-        </el-form-item>
-        <el-form-item v-else :label="t('webProjects.frp.domain')">
-          <el-input
-            v-model="frpForm.domain"
-            :placeholder="t('webProjects.frp.domainPlaceholder')"
-          />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="frpVisible = false">{{
-          t("common.cancel")
-        }}</el-button>
-        <el-button type="primary" @click="createFrpProxy">
-          {{ t("webProjects.frp.create") }}
-        </el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
@@ -542,11 +1032,33 @@ onUnmounted(() => {
   padding-right: 8px;
 }
 
-.root-hint {
-  margin-bottom: 12px;
+.toolbar-actions,
+.project-actions,
+.status-tags,
+.drawer-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.drawer-footer {
+  justify-content: space-between;
+  width: 100%;
+}
+
+.root-hint,
+.form-help {
   color: #6b7280;
   font-size: 12px;
   user-select: text;
+}
+
+.root-hint {
+  margin-bottom: 12px;
+}
+
+.form-help {
+  margin-top: 4px;
 }
 
 .empty-description {
@@ -556,7 +1068,7 @@ onUnmounted(() => {
 
 .project-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
   gap: 12px;
 }
 
@@ -572,11 +1084,16 @@ onUnmounted(() => {
   filter: drop-shadow(0 2px 4px rgb(0 0 0 / 8%));
 }
 
-.project-header {
+.project-header,
+.public-summary > div {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+}
+
+.status-tags {
+  justify-content: flex-end;
 }
 
 .project-title-wrap {
@@ -600,7 +1117,8 @@ onUnmounted(() => {
   }
 }
 
-.project-meta {
+.project-meta,
+.preview-card dl {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
@@ -625,14 +1143,64 @@ onUnmounted(() => {
   }
 }
 
-.project-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+.public-summary,
+.preview-card {
+  padding: 10px;
+  border-radius: 4px;
+  background: #eeebf6;
+}
 
-  :deep(.el-button + .el-button) {
-    margin-left: 0;
+.public-summary {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+
+  span {
+    color: #6b7280;
   }
+
+  button {
+    overflow: hidden;
+    max-width: 75%;
+    color: #5f3bb0;
+    font-weight: 600;
+    text-decoration: underline;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.preview-card {
+  margin-top: 8px;
+
+  h3 {
+    margin-top: 12px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+}
+
+.dns-record {
+  margin-top: 6px;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  user-select: text;
+  white-space: nowrap;
+}
+
+.status-panel {
+  margin-top: 20px;
+}
+
+.project-actions :deep(.el-button + .el-button),
+.toolbar-actions :deep(.el-button + .el-button),
+.drawer-footer :deep(.el-button + .el-button) {
+  margin-left: 0;
+}
+
+:deep(.danger-item) {
+  color: var(--el-color-danger);
 }
 
 .log-content {
