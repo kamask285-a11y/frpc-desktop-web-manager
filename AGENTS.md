@@ -1,4 +1,5 @@
 # Repository Guidelines
+每完成一件可独立回滚的工作，都必须创建一个对应的 Git commit。一次任务可以有多个有意义的原子提交，但不能把多个无关任务混入同一提交；纯讨论、只读检查且没有文件变化时不创建空提交。
 
 ## Project Overview
 
