@@ -21,6 +21,13 @@
       "filter": [
         "**/*.sql"
       ]
+    },
+    {
+      "from": "electron/scripts",
+      "to": "scripts",
+      "filter": [
+        "**/*.sh"
+      ]
     }
   ],
   "dmg": {
