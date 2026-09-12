@@ -244,7 +244,9 @@ class RemoteGatewayService {
       "-o",
       "StrictHostKeyChecking=yes",
       "-o",
-      `UserKnownHostsFile=${this.getKnownHostsPath()}`,
+      // ssh splits UserKnownHostsFile on whitespace, and the macOS app data
+      // directory ("Application Support") contains a space, so quote the path.
+      `UserKnownHostsFile="${this.getKnownHostsPath()}"`,
       "-o",
       "GlobalKnownHostsFile=/dev/null"
     ];
