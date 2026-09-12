@@ -63,6 +63,11 @@ The selected port is passed to the project through the `PORT` environment
 variable. Projects should provide at least one npm script; `start`, `dev`, and
 `serve` are selected in that order by default.
 
+Quitting the application stops the project processes it started before stopping
+frpc, so no orphaned process keeps holding a port; on the next launch, projects
+with auto-start enabled are started again. Sites published by the application
+are therefore offline while it is not running.
+
 ## Public Access Management
 
 Click **Server Settings** on the **Web Services** page to configure a public
