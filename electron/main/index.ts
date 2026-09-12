@@ -17,6 +17,7 @@ import LogController from "../controller/LogController";
 import ProxyController from "../controller/ProxyController";
 import SystemController from "../controller/SystemController";
 import VersionController from "../controller/VersionController";
+import WebProjectController from "../controller/WebProjectController";
 import BeanFactory from "../core/BeanFactory";
 import { ipcRouters, listeners } from "../core/IpcRouter";
 import Logger from "../core/Logger";
@@ -26,6 +27,7 @@ import AppConfigRepository from "../repository/AppConfigRepository";
 import ProxyRepository from "../repository/ProxyRepository";
 import ServerRepository from "../repository/ServerRepository";
 import VersionRepository from "../repository/VersionRepository";
+import WebProjectRepository from "../repository/WebProjectRepository";
 import FrpcProcessService from "../service/FrpcProcessService";
 import GitHubService from "../service/GitHubService";
 import LogService from "../service/LogService";
@@ -33,6 +35,7 @@ import ProxyService from "../service/ProxyService";
 import ServerService from "../service/ServerService";
 import SystemService from "../service/SystemService";
 import VersionService from "../service/VersionService";
+import WebProjectService from "../service/WebProjectService";
 
 process.env.DIST_ELECTRON = join(__dirname, "..");
 process.env.DIST = join(process.env.DIST_ELECTRON, "../dist");
@@ -170,11 +173,14 @@ class FrpcDesktopApp {
 
       const frpcProcessService: FrpcProcessService =
         BeanFactory.getBean("frpcProcessService");
+      const webProjectService: WebProjectService =
+        BeanFactory.getBean("webProjectService");
       const processInitialization = serverConfig?.system.autoConnectOnStartup
         ? frpcProcessService.startFrpcProcess()
         : frpcProcessService.restoreExistingProcess();
       processInitialization
         .then(() => {
+          void webProjectService.startAutoStartProjects();
           this.logStartupStage("background-tasks-ready");
         })
         .catch(error => {
@@ -297,6 +303,7 @@ class FrpcDesktopApp {
         );
         const versionRepository = new VersionRepository(database);
         const proxyRepository = new ProxyRepository(database);
+        const webProjectRepository = new WebProjectRepository(database);
         const nedbMigrationService = new NedbMigrationService(
           database,
           appConfigRepository,
@@ -310,7 +317,8 @@ class FrpcDesktopApp {
           appConfigRepository,
           serverRepository,
           versionRepository,
-          proxyRepository
+          proxyRepository,
+          webProjectRepository
         );
         this.initializeRouters();
         const serverService: ServerService =
@@ -380,6 +388,11 @@ class FrpcDesktopApp {
           );
         });
       }
+      if (BeanFactory.hasBean("webProjectService")) {
+        const webProjectService: WebProjectService =
+          BeanFactory.getBean("webProjectService");
+        void webProjectService.dispose();
+      }
     });
 
     app.on("will-quit", () => {
@@ -400,12 +413,14 @@ class FrpcDesktopApp {
     appConfigRepository: AppConfigRepository,
     serverRepository: ServerRepository,
     versionRepository: VersionRepository,
-    proxyRepository: ProxyRepository
+    proxyRepository: ProxyRepository,
+    webProjectRepository: WebProjectRepository
   ) {
     BeanFactory.setBean("appConfigRepository", appConfigRepository);
     BeanFactory.setBean("serverRepository", serverRepository);
     BeanFactory.setBean("versionRepository", versionRepository);
     BeanFactory.setBean("proxyRepository", proxyRepository);
+    BeanFactory.setBean("webProjectRepository", webProjectRepository);
     BeanFactory.setBean("systemService", new SystemService());
     BeanFactory.setBean(
       "serverService",
@@ -428,6 +443,10 @@ class FrpcDesktopApp {
       new LogService(BeanFactory.getBean("systemService"))
     );
     BeanFactory.setBean("frpcProcessService", new FrpcProcessService());
+    BeanFactory.setBean(
+      "webProjectService",
+      new WebProjectService(BeanFactory.getBean("webProjectRepository"))
+    );
     BeanFactory.setBean(
       "proxyService",
       new ProxyService(
@@ -467,6 +486,10 @@ class FrpcDesktopApp {
       )
     );
     BeanFactory.setBean("systemController", new SystemController());
+    BeanFactory.setBean(
+      "webProjectController",
+      new WebProjectController(BeanFactory.getBean("webProjectService"))
+    );
     Logger.info(`FrpcDesktopApp.initializeBeans`, `Beans initialized.`);
   }
 

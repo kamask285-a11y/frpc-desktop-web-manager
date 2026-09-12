@@ -130,6 +130,40 @@ export const ipcRouters: IpcRouters = {
       path: "system/getFrpcDesktopGithubLastRelease",
       controller: "systemController.getFrpcDesktopGithubLastRelease"
     }
+  },
+  WEB_PROJECT: {
+    list: {
+      path: "webProject/list",
+      controller: "webProjectController.list"
+    },
+    scan: {
+      path: "webProject/scan",
+      controller: "webProjectController.scan"
+    },
+    update: {
+      path: "webProject/update",
+      controller: "webProjectController.update"
+    },
+    start: {
+      path: "webProject/start",
+      controller: "webProjectController.start"
+    },
+    stop: {
+      path: "webProject/stop",
+      controller: "webProjectController.stop"
+    },
+    restart: {
+      path: "webProject/restart",
+      controller: "webProjectController.restart"
+    },
+    getLog: {
+      path: "webProject/getLog",
+      controller: "webProjectController.getLog"
+    },
+    openDirectory: {
+      path: "webProject/openDirectory",
+      controller: "webProjectController.openDirectory"
+    }
   }
 };
 

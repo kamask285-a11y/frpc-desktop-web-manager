@@ -70,6 +70,7 @@ class DatabaseManager {
   public resetData(): void {
     const database = this.getDatabase();
     database.transaction(() => {
+      database.prepare("DELETE FROM t_frpcd_web_projects").run();
       database.prepare("DELETE FROM t_frpcd_proxies").run();
       database.prepare("DELETE FROM t_frpcd_servers").run();
       database.prepare("DELETE FROM t_frpcd_versions").run();
