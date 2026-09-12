@@ -34,7 +34,8 @@ enum IpcRouterKeys {
   LAUNCH = "LAUNCH",
   PROXY = "PROXY",
   SYSTEM = "SYSTEM",
-  WEB_PROJECT = "WEB_PROJECT"
+  WEB_PROJECT = "WEB_PROJECT",
+  WEB_GATEWAY = "WEB_GATEWAY"
 }
 
 type IpcRouters = Record<

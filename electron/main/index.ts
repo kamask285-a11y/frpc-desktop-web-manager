@@ -18,6 +18,7 @@ import ProxyController from "../controller/ProxyController";
 import SystemController from "../controller/SystemController";
 import VersionController from "../controller/VersionController";
 import WebProjectController from "../controller/WebProjectController";
+import WebGatewayController from "../controller/WebGatewayController";
 import BeanFactory from "../core/BeanFactory";
 import { ipcRouters, listeners } from "../core/IpcRouter";
 import Logger from "../core/Logger";
@@ -36,6 +37,8 @@ import ServerService from "../service/ServerService";
 import SystemService from "../service/SystemService";
 import VersionService from "../service/VersionService";
 import WebProjectService from "../service/WebProjectService";
+import RemoteGatewayService from "../service/RemoteGatewayService";
+import WebPublicationService from "../service/WebPublicationService";
 
 process.env.DIST_ELECTRON = join(__dirname, "..");
 process.env.DIST = join(process.env.DIST_ELECTRON, "../dist");
@@ -455,6 +458,21 @@ class FrpcDesktopApp {
       )
     );
     BeanFactory.setBean(
+      "remoteGatewayService",
+      new RemoteGatewayService(BeanFactory.getBean("appConfigRepository"))
+    );
+    BeanFactory.setBean(
+      "webPublicationService",
+      new WebPublicationService(
+        BeanFactory.getBean("webProjectRepository"),
+        BeanFactory.getBean("proxyRepository"),
+        BeanFactory.getBean("webProjectService"),
+        BeanFactory.getBean("proxyService"),
+        BeanFactory.getBean("frpcProcessService"),
+        BeanFactory.getBean("remoteGatewayService")
+      )
+    );
+    BeanFactory.setBean(
       "configController",
       new ConfigController(
         BeanFactory.getBean("serverService"),
@@ -489,6 +507,13 @@ class FrpcDesktopApp {
     BeanFactory.setBean(
       "webProjectController",
       new WebProjectController(BeanFactory.getBean("webProjectService"))
+    );
+    BeanFactory.setBean(
+      "webGatewayController",
+      new WebGatewayController(
+        BeanFactory.getBean("remoteGatewayService"),
+        BeanFactory.getBean("webPublicationService")
+      )
     );
     Logger.info(`FrpcDesktopApp.initializeBeans`, `Beans initialized.`);
   }

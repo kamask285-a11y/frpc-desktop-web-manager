@@ -40,6 +40,7 @@ interface WebGatewayHostKeyScan {
 }
 
 interface WebPublicAccessPreview {
+  projectId: string;
   domainPrefix: string;
   fqdn: string;
   localPort: number;
@@ -50,6 +51,7 @@ interface WebPublicAccessPreview {
 }
 
 interface WebPublicAccessCheck {
+  project: WebProjectView;
   status: WebPublicAccessStatus;
   dnsReady: boolean;
   backendReady: boolean;

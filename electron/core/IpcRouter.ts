@@ -164,6 +164,48 @@ export const ipcRouters: IpcRouters = {
       path: "webProject/openDirectory",
       controller: "webProjectController.openDirectory"
     }
+  },
+  WEB_GATEWAY: {
+    getConfig: {
+      path: "webGateway/getConfig",
+      controller: "webGatewayController.getConfig"
+    },
+    saveConfig: {
+      path: "webGateway/saveConfig",
+      controller: "webGatewayController.saveConfig"
+    },
+    scanHostKey: {
+      path: "webGateway/scanHostKey",
+      controller: "webGatewayController.scanHostKey"
+    },
+    trustHostKey: {
+      path: "webGateway/trustHostKey",
+      controller: "webGatewayController.trustHostKey"
+    },
+    testConnection: {
+      path: "webGateway/testConnection",
+      controller: "webGatewayController.testConnection"
+    },
+    preview: {
+      path: "webGateway/preview",
+      controller: "webGatewayController.preview"
+    },
+    publish: {
+      path: "webGateway/publish",
+      controller: "webGatewayController.publish"
+    },
+    check: {
+      path: "webGateway/check",
+      controller: "webGatewayController.check"
+    },
+    unpublish: {
+      path: "webGateway/unpublish",
+      controller: "webGatewayController.unpublish"
+    },
+    removeProject: {
+      path: "webGateway/removeProject",
+      controller: "webGatewayController.removeProject"
+    }
   }
 };
 
