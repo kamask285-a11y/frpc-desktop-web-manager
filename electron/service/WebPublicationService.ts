@@ -27,6 +27,11 @@ class WebPublicationService {
     const project = await this.requireProject(projectId);
     const prefix = this.normalizeDomainPrefix(domainPrefix);
     const gateway = this.gatewayService.getConfig();
+    if (!gateway.baseDomain || !gateway.publicIp) {
+      throw new Error(
+        "Configure the gateway server address, base domain and public IP in Server Settings first."
+      );
+    }
     const fqdn = `${prefix}.${gateway.baseDomain}`;
     const digest = createHash("sha256").update(fqdn).digest();
     const value = digest.readUInt32BE(0);

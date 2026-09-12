@@ -76,15 +76,19 @@ Click **Server Settings** on the **Web Services** page to configure a public
 gateway reachable over SSH (for example a Hong Kong Ubuntu server):
 
 ```text
-SSH host: 43.154.60.195
+SSH host: <your server IP or hostname>
 SSH port: 22
-SSH user: deploy
+SSH user: <your login user>
 SSH identity file: ~/.ssh/xxx (leave empty to use the default SSH keys)
-Base domain: work.199227.xyz
-Public IP: 43.154.60.195
+Base domain: example.com
+Public IP: <your server public IP>
 Caddy sites directory: /etc/caddy/acli.d/sites
 Caddyfile path: /etc/caddy/Caddyfile
 ```
+
+These values have no built-in defaults and must match your own server. The base
+domain and public IP are required to derive the site domain and remote port; the
+application asks you to finish Server Settings while they are empty.
 
 Trust the host key and test the connection once. The fingerprint is stored in the
 application data directory (`ssh/known_hosts`) and only applies to this
@@ -96,7 +100,7 @@ application computes the rest:
 
 ```text
 Domain prefix: notes
-Full domain: notes.work.199227.xyz
+Full domain: notes.example.com
 Local port: 3000
 FRP remote port: 26556 (SHA-256 of the domain, range 20000-29999)
 ```
@@ -111,7 +115,7 @@ Only one manual step remains:
 ```text
 Type: A
 Name: notes
-Value: 43.154.60.195
+Value: <your server public IP>
 ```
 
 After DNS propagates, **Re-check** moves the status to online. **Disable Public

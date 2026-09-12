@@ -14,13 +14,15 @@ class AppConfigRepository {
     language: "en-US"
   };
 
+  // Gateway settings are machine specific, so they start empty and are filled
+  // in through "Server Settings" before public access can be used.
   private static readonly WEB_GATEWAY_DEFAULTS: WebGatewayConfig = {
-    sshHost: "43.154.60.195",
+    sshHost: "",
     sshPort: 22,
     sshUser: "",
     identityFile: "",
-    baseDomain: "work.199227.xyz",
-    publicIp: "43.154.60.195",
+    baseDomain: "",
+    publicIp: "",
     remotePortMin: 20000,
     remotePortMax: 29999,
     caddySitesDirectory: "/etc/caddy/acli.d/sites",

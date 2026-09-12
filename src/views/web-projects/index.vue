@@ -40,12 +40,12 @@ const gatewayTrusting = ref(false);
 const gatewayFormRef = ref<FormInstance>();
 const gatewayResult = ref<WebGatewayConnectionResult | null>(null);
 const gatewayForm = reactive<WebGatewayConfig>({
-  sshHost: "43.154.60.195",
+  sshHost: "",
   sshPort: 22,
   sshUser: "",
   identityFile: "",
-  baseDomain: "work.199227.xyz",
-  publicIp: "43.154.60.195",
+  baseDomain: "",
+  publicIp: "",
   remotePortMin: 20000,
   remotePortMax: 29999,
   caddySitesDirectory: "/etc/caddy/acli.d/sites",
