@@ -66,6 +66,13 @@ class WebProjectService {
         startScript: this.pickStartScript(packageMetadata.scripts),
         port: await this.pickAvailablePort(3000),
         autoStart: false,
+        domainPrefix: null,
+        fqdn: null,
+        remotePort: null,
+        proxyId: null,
+        publicAccessStatus: "disabled",
+        lastPublicAccessError: null,
+        publishedAt: null,
         createdAt: now,
         updatedAt: now
       });

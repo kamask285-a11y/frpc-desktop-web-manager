@@ -14,6 +14,20 @@ class AppConfigRepository {
     language: "en-US"
   };
 
+  private static readonly WEB_GATEWAY_DEFAULTS: WebGatewayConfig = {
+    sshHost: "43.154.60.195",
+    sshPort: 22,
+    sshUser: "",
+    identityFile: "",
+    baseDomain: "work.199227.xyz",
+    publicIp: "43.154.60.195",
+    remotePortMin: 20000,
+    remotePortMax: 29999,
+    caddySitesDirectory: "/etc/caddy/acli.d/sites",
+    caddyConfigPath: "/etc/caddy/Caddyfile",
+    useSudo: true
+  };
+
   constructor(private readonly database: Database.Database) {}
 
   public getSystemConfig(): FrpcSystemConfiguration {
@@ -67,6 +81,79 @@ class AppConfigRepository {
       String(config.autoConnectOnStartup ?? false)
     );
     this.upsert("desktop", "language", "string", config.language || "en-US");
+  }
+
+  public getWebGatewayConfig(): WebGatewayConfig {
+    const values = this.getNamespace("web_gateway");
+    return {
+      sshHost:
+        values.get("ssh_host") ||
+        AppConfigRepository.WEB_GATEWAY_DEFAULTS.sshHost,
+      sshPort: this.readInteger(
+        values.get("ssh_port"),
+        AppConfigRepository.WEB_GATEWAY_DEFAULTS.sshPort
+      ),
+      sshUser: values.get("ssh_user") || "",
+      identityFile: values.get("identity_file") || "",
+      baseDomain:
+        values.get("base_domain") ||
+        AppConfigRepository.WEB_GATEWAY_DEFAULTS.baseDomain,
+      publicIp:
+        values.get("public_ip") ||
+        AppConfigRepository.WEB_GATEWAY_DEFAULTS.publicIp,
+      remotePortMin: this.readInteger(
+        values.get("remote_port_min"),
+        AppConfigRepository.WEB_GATEWAY_DEFAULTS.remotePortMin
+      ),
+      remotePortMax: this.readInteger(
+        values.get("remote_port_max"),
+        AppConfigRepository.WEB_GATEWAY_DEFAULTS.remotePortMax
+      ),
+      caddySitesDirectory:
+        values.get("caddy_sites_directory") ||
+        AppConfigRepository.WEB_GATEWAY_DEFAULTS.caddySitesDirectory,
+      caddyConfigPath:
+        values.get("caddy_config_path") ||
+        AppConfigRepository.WEB_GATEWAY_DEFAULTS.caddyConfigPath,
+      useSudo: this.readBoolean(
+        values.get("use_sudo"),
+        AppConfigRepository.WEB_GATEWAY_DEFAULTS.useSudo
+      )
+    };
+  }
+
+  public saveWebGatewayConfig(config: WebGatewayConfig): void {
+    this.upsert("web_gateway", "ssh_host", "string", config.sshHost);
+    this.upsert("web_gateway", "ssh_port", "integer", String(config.sshPort));
+    this.upsert("web_gateway", "ssh_user", "string", config.sshUser);
+    this.upsert("web_gateway", "identity_file", "string", config.identityFile);
+    this.upsert("web_gateway", "base_domain", "string", config.baseDomain);
+    this.upsert("web_gateway", "public_ip", "string", config.publicIp);
+    this.upsert(
+      "web_gateway",
+      "remote_port_min",
+      "integer",
+      String(config.remotePortMin)
+    );
+    this.upsert(
+      "web_gateway",
+      "remote_port_max",
+      "integer",
+      String(config.remotePortMax)
+    );
+    this.upsert(
+      "web_gateway",
+      "caddy_sites_directory",
+      "string",
+      config.caddySitesDirectory
+    );
+    this.upsert(
+      "web_gateway",
+      "caddy_config_path",
+      "string",
+      config.caddyConfigPath
+    );
+    this.upsert("web_gateway", "use_sudo", "boolean", String(config.useSudo));
   }
 
   public hasNedbMigrationMarker(): boolean {
@@ -139,6 +226,20 @@ class AppConfigRepository {
       .run(IdUtils.genUUID(), namespace, key, valueType, value, now, now);
   }
 
+  private getNamespace(namespace: string): Map<string, string> {
+    const rows = this.database
+      .prepare(
+        `SELECT config_key, config_value
+         FROM t_frpcd_app_config
+         WHERE scope_type = 'global'
+           AND scope_id IS NULL
+           AND namespace = ?
+           AND deleted_at IS NULL`
+      )
+      .all(namespace) as AppConfigRow[];
+    return new Map(rows.map(row => [row.config_key, row.config_value]));
+  }
+
   private readBoolean(value: string | undefined, fallback: boolean): boolean {
     if (value === undefined) {
       return fallback;
@@ -147,6 +248,17 @@ class AppConfigRepository {
       throw new Error("Invalid boolean value in desktop application config.");
     }
     return value === "true";
+  }
+
+  private readInteger(value: string | undefined, fallback: number): number {
+    if (value === undefined) {
+      return fallback;
+    }
+    const result = Number(value);
+    if (!Number.isSafeInteger(result)) {
+      throw new Error("Invalid integer value in application config.");
+    }
+    return result;
   }
 }
 
