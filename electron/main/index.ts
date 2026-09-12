@@ -55,6 +55,8 @@ class FrpcDesktopApp {
   private _tray: Tray | null = null;
   private _quitting = false;
   private _backgroundTasksStarted = false;
+  private _shutdownPromise: Promise<void> | null = null;
+  private _shutdownFinished = false;
   private readonly _startupStartedAt = performance.now();
 
   constructor() {
@@ -223,6 +225,30 @@ class FrpcDesktopApp {
     this._tray = null;
   }
 
+  /**
+   * Stops every process this application owns: managed web projects first so
+   * their ports are released, then frpc. `before-quit` waits for this promise
+   * so quitting never leaves orphaned services behind.
+   */
+  private shutdown(): Promise<void> {
+    if (!this._shutdownPromise) {
+      const stops: Array<Promise<unknown>> = [];
+      if (BeanFactory.hasBean("webProjectService")) {
+        const webProjectService: WebProjectService =
+          BeanFactory.getBean("webProjectService");
+        stops.push(webProjectService.dispose());
+      }
+      if (BeanFactory.hasBean("frpcProcessService")) {
+        const frpcProcessService: FrpcProcessService =
+          BeanFactory.getBean("frpcProcessService");
+        frpcProcessService.dispose();
+        stops.push(frpcProcessService.stopFrpcProcess());
+      }
+      this._shutdownPromise = Promise.allSettled(stops).then(() => undefined);
+    }
+    return this._shutdownPromise;
+  }
+
   initializeTray() {
     if (this._tray && !this._tray.isDestroyed()) {
       return;
@@ -242,22 +268,8 @@ class FrpcDesktopApp {
       {
         label: "退出",
         click: () => {
-          this._quitting = true;
-          this.destroyTray();
-          // todo stop frpc process
-          const frpcProcessService: FrpcProcessService =
-            BeanFactory.getBean("frpcProcessService");
-          frpcProcessService
-            .stopFrpcProcess()
-            .catch(error => {
-              Logger.error(
-                `FrpcDesktopApp.initializeTray`,
-                error instanceof Error ? error : new Error(String(error))
-              );
-            })
-            .finally(() => {
-              app.quit();
-            });
+          // Shutdown (managed web projects and frpc) runs in before-quit.
+          app.quit();
         }
       }
     ];
@@ -341,21 +353,8 @@ class FrpcDesktopApp {
     app.on("window-all-closed", () => {
       this._win = null;
       if (process.platform !== "darwin") {
-        this._quitting = true;
-        this.destroyTray();
-        const frpcProcessService: FrpcProcessService =
-          BeanFactory.getBean("frpcProcessService");
-        frpcProcessService
-          .stopFrpcProcess()
-          .catch(error => {
-            Logger.error(
-              `FrpcDesktopApp.window-all-closed`,
-              error instanceof Error ? error : new Error(String(error))
-            );
-          })
-          .finally(() => {
-            app.quit();
-          });
+        // Shutdown (managed web projects and frpc) runs in before-quit.
+        app.quit();
       }
     });
 
@@ -377,25 +376,29 @@ class FrpcDesktopApp {
       });
     });
 
-    app.on("before-quit", () => {
+    app.on("before-quit", event => {
       this._quitting = true;
       this.destroyTray();
-      if (BeanFactory.hasBean("frpcProcessService")) {
-        const frpcProcessService: FrpcProcessService =
-          BeanFactory.getBean("frpcProcessService");
-        frpcProcessService.dispose();
-        frpcProcessService.stopFrpcProcess().catch(error => {
+      if (this._shutdownFinished) {
+        return;
+      }
+      // Let managed projects and frpc stop first, but never block quitting.
+      event.preventDefault();
+      const timeout = new Promise<void>(resolve => {
+        const timer = setTimeout(resolve, 8000);
+        timer.unref?.();
+      });
+      Promise.race([this.shutdown(), timeout])
+        .catch(error => {
           Logger.error(
             `FrpcDesktopApp.before-quit`,
             error instanceof Error ? error : new Error(String(error))
           );
+        })
+        .finally(() => {
+          this._shutdownFinished = true;
+          app.quit();
         });
-      }
-      if (BeanFactory.hasBean("webProjectService")) {
-        const webProjectService: WebProjectService =
-          BeanFactory.getBean("webProjectService");
-        void webProjectService.dispose();
-      }
     });
 
     app.on("will-quit", () => {
