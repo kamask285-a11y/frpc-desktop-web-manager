@@ -49,6 +49,17 @@
 - [x] tcp、udp协议支持批量端口
 - [x] support multiple languages
 - [x] 支持代理快速搜索及卡片/列表分页
+- [x] 本机 Node.js Web 服务管理与 FRP 代理快捷配置
+
+## Web 服务管理
+
+将 Node.js 项目放在 `/Volumes/Box-1T/Web` 下。一级项目目录包含
+`package.json` 时即可被识别。在侧栏打开“Web 服务”，可以扫描项目、选择 npm
+启动脚本、配置服务端口、启动或停止进程、查看日志，并使用项目本地端口快速创建
+TCP 或 HTTP FRP 代理。
+
+配置的端口通过 `PORT` 环境变量传给项目。项目至少需要提供一个 npm script；默认
+按 `start`、`dev`、`serve` 的顺序选择启动脚本。
 
 
 ## 常见问题

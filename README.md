@@ -49,6 +49,19 @@
 - [x] TCP and UDP protocols support batch ports
 - [x] Support multiple languages
 - [x] Fast proxy search with card/list pagination
+- [x] Local Node.js web service management with FRP proxy shortcuts
+
+## Web Service Management
+
+Place Node.js projects under `/Volumes/Box-1T/Web`. A project is discovered when
+its top-level directory contains a `package.json`. Open **Web Services** in the
+sidebar to scan projects, select an npm start script, configure the service port,
+start or stop the process, view logs, and create a TCP or HTTP FRP proxy using the
+project's local port.
+
+The selected port is passed to the project through the `PORT` environment
+variable. Projects should provide at least one npm script; `start`, `dev`, and
+`serve` are selected in that order by default.
 
 ## Common Issues
 

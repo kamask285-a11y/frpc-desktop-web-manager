@@ -84,6 +84,7 @@ flowchart LR
   servers["t_frpcd_servers<br/>frpc 服务端配置"]
   proxies["t_frpcd_proxies<br/>代理与 Visitor 配置"]
   versions["t_frpcd_versions<br/>本地 frpc 版本"]
+  webProjects["t_frpcd_web_projects<br/>本机 Web 项目"]
 
   proxies -->|"FK: server_id → id<br/>ON DELETE CASCADE"| servers
   servers -.->|"逻辑引用: frpc_version → github_release_id<br/>不建立外键"| versions
@@ -93,6 +94,7 @@ flowchart LR
 - 虚线表示业务层逻辑引用，不由 SQLite 强制约束；
 - `t_frpcd_app_config` 的作用域是多态设计，当前没有 user、project 实体表，因此 `scope_id` 不建立外键；
 - `t_frpcd_schema_migrations` 是独立的数据库管理表，不与业务表关联。
+- `t_frpcd_web_projects` 独立保存 Web 项目管理配置，运行时进程和日志不写入数据库。
 
 ### 4.2 `t_frpcd_schema_migrations`
 
@@ -208,7 +210,7 @@ flowchart LR
 | `status` | INTEGER | NOT NULL DEFAULT 1；限定 0/1 | `status` |
 | `transport_json` | TEXT | NOT NULL；合法 JSON 对象 | `transport` 完整对象 |
 
-该表的外键和索引统一见“4.7 外键与索引设计”。暂不对代理名称增加唯一约束，因为现有 NeDB 数据可能存在重名，迁移不能因此失败。
+该表的外键和索引统一见“4.8 外键与索引设计”。暂不对代理名称增加唯一约束，因为现有 NeDB 数据可能存在重名，迁移不能因此失败。
 
 ### 4.6 `t_frpcd_versions`
 
@@ -231,9 +233,28 @@ flowchart LR
 
 `size` 保持 `TEXT` 是为了兼容当前 `FileUtils.formatBytes` 生成的展示字符串。若未来需要按字节排序，应新增 `size_bytes INTEGER`，而不是改变现有字段语义。
 
-### 4.7 外键与索引设计
+### 4.7 `t_frpcd_web_projects`
 
-#### 4.7.1 外键
+保存 `/Volumes/Box-1T/Web` 下识别到的 Node.js 项目配置。进程 PID、运行状态和日志
+只存在于 Electron 主进程内存中，应用退出时不持久化。
+
+| 字段 | 类型 | 约束/默认值 | 说明 |
+| --- | --- | --- | --- |
+| `id` | TEXT | PRIMARY KEY | 项目 UUID |
+| `name` | TEXT | NOT NULL | 展示名称 |
+| `path` | TEXT | NOT NULL UNIQUE | 项目绝对路径，必须位于 Web 根目录内 |
+| `start_script` | TEXT | NOT NULL DEFAULT `'start'` | `package.json` 中的 npm script 名称 |
+| `port` | INTEGER | NOT NULL DEFAULT 3000；1–65535 | 通过 `PORT` 环境变量传入的服务端口 |
+| `auto_start` | INTEGER | NOT NULL DEFAULT 0；布尔检查 | Frpc-Desktop 启动后是否自动运行 |
+| `created_at` | TEXT | NOT NULL | 首次发现时间，UTC ISO 8601 格式 |
+| `updated_at` | TEXT | NOT NULL | 配置更新时间，UTC ISO 8601 格式 |
+
+扫描只新增尚未登记的项目，不覆盖用户已保存的名称、脚本、端口或自动启动设置。
+项目目录丢失时保留配置并在界面标记为缺失，避免因临时磁盘离线误删数据。
+
+### 4.8 外键与索引设计
+
+#### 4.8.1 外键
 
 | 外键名称 | 子表与字段 | 父表与字段 | 更新策略 | 删除策略 | 说明 |
 | --- | --- | --- | --- | --- | --- |
@@ -248,7 +269,7 @@ flowchart LR
 
 所有 SQLite 连接必须开启 `PRAGMA foreign_keys = ON`，否则外键声明不会生效。
 
-#### 4.7.2 索引
+#### 4.8.2 索引
 
 | 索引/约束名称 | 表 | 类型 | 字段或表达式 | 用途 |
 | --- | --- | --- | --- | --- |
@@ -261,6 +282,8 @@ flowchart LR
 | `idx_t_frpcd_proxies_server_status` | `t_frpcd_proxies` | INDEX | `server_id, status` | 加速 server 下全部 proxy、启用 proxy 查询以及外键级联定位；其最左列可支持仅按 `server_id` 查询，无需重复单列索引 |
 | `pk_t_frpcd_versions` | `t_frpcd_versions` | PRIMARY KEY | `id` | 按 UUID 定位本地版本记录 |
 | `uq_t_frpcd_versions_github_release_id` | `t_frpcd_versions` | UNIQUE | `github_release_id` | 支持 `findByGithubReleaseId` 和 `exists`，并防止同一 GitHub Release 重复入库 |
+| `pk_t_frpcd_web_projects` | `t_frpcd_web_projects` | PRIMARY KEY | `id` | 按 UUID 定位 Web 项目配置 |
+| `uq_t_frpcd_web_projects_path` | `t_frpcd_web_projects` | UNIQUE | `path` | 避免同一个项目目录被重复登记 |
 
 索引设计保持与当前查询路径一致。暂不为 `name`、`type`、`downloaded` 等低选择性或当前仅在 renderer 内过滤的字段增加索引，避免无收益的写放大。
 
