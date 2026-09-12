@@ -34,13 +34,6 @@ restore_target() {
 
 write_target() {
   mkdir -p "$sites_directory" "$backup_directory"
-  if [[ -f "$target_file" ]]; then
-    had_target="yes"
-    backup_file="${backup_directory}/${fqdn}.$(date -u +%Y%m%dT%H%M%SZ).caddy"
-    cp "$target_file" "$backup_file"
-    chmod 600 "$backup_file"
-  fi
-
   local temporary_file
   temporary_file="$(mktemp "${sites_directory%/}/.${fqdn}.XXXXXX")"
   trap 'rm -f "$temporary_file"' RETURN
@@ -48,6 +41,17 @@ write_target() {
     "$fqdn" "$remote_port" >"$temporary_file"
   caddy fmt --overwrite "$temporary_file" >/dev/null
   chmod 644 "$temporary_file"
+  if [[ -f "$target_file" ]] && cmp -s "$temporary_file" "$target_file"; then
+    rm -f "$temporary_file"
+    trap - RETURN
+    return
+  fi
+  if [[ -f "$target_file" ]]; then
+    had_target="yes"
+    backup_file="${backup_directory}/${fqdn}.$(date -u +%Y%m%dT%H%M%SZ).caddy"
+    cp "$target_file" "$backup_file"
+    chmod 600 "$backup_file"
+  fi
   mv "$temporary_file" "$target_file"
   trap - RETURN
 }

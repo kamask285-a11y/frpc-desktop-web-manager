@@ -303,7 +303,9 @@ class RemoteGatewayService {
           resolve({ stdout, stderr });
           return;
         }
-        const detail = stderr.trim().split("\n").slice(-3).join(" ");
+        const result = this.parseOutput(stdout);
+        const detail =
+          result.ERROR || stderr.trim().split("\n").slice(-3).join(" ");
         reject(new Error(detail || `${command} exited with code ${code}.`));
       });
       child.stdin.end(input);
@@ -311,6 +313,14 @@ class RemoteGatewayService {
   }
 
   private parseResult(output: string): Record<string, string> {
+    const result = this.parseOutput(output);
+    if (result.RESULT !== "PASS") {
+      throw new Error(result.ERROR || "Remote gateway operation failed.");
+    }
+    return result;
+  }
+
+  private parseOutput(output: string): Record<string, string> {
     const result: Record<string, string> = {};
     output.split("\n").forEach(line => {
       const separator = line.indexOf("=");
@@ -318,9 +328,6 @@ class RemoteGatewayService {
         result[line.slice(0, separator)] = line.slice(separator + 1);
       }
     });
-    if (result.RESULT !== "PASS") {
-      throw new Error(result.ERROR || "Remote gateway operation failed.");
-    }
     return result;
   }
 
