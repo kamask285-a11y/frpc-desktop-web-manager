@@ -10,6 +10,9 @@ export default {
     proxy: {
       title: "代理"
     },
+    webProjects: {
+      title: "Web 服务"
+    },
     download: {
       title: "下载"
     },
@@ -21,6 +24,66 @@ export default {
     },
     about: {
       title: "关于"
+    }
+  },
+  webProjects: {
+    root: "项目目录：{path}",
+    refresh: "扫描项目",
+    emptyTitle: "未发现 Node.js 项目",
+    emptyDescription:
+      "请在 {path} 下创建包含 package.json 的项目，然后重新扫描。",
+    status: {
+      running: "运行中",
+      stopped: "已停止",
+      error: "运行异常",
+      missing: "目录缺失"
+    },
+    field: {
+      path: "项目路径",
+      script: "启动脚本",
+      port: "服务端口",
+      pid: "进程 PID",
+      autoStart: "应用启动时运行"
+    },
+    action: {
+      start: "启动",
+      stop: "停止",
+      restart: "重启",
+      edit: "配置",
+      log: "日志",
+      folder: "目录",
+      open: "打开服务",
+      frp: "配置 FRP",
+      save: "保存"
+    },
+    editTitle: "配置 Web 服务",
+    logTitle: "服务日志：{name}",
+    logEmpty: "当前暂无日志，启动服务后可在这里查看输出。",
+    frpTitle: "为 {name} 创建 FRP 代理",
+    frp: {
+      type: "代理类型",
+      tcp: "TCP 端口",
+      http: "HTTP 域名",
+      remotePort: "远程端口",
+      domain: "访问域名",
+      domainPlaceholder: "例如 app.example.com",
+      create: "创建代理",
+      hint: "本地地址将自动设置为 127.0.0.1:{port}。"
+    },
+    validation: {
+      name: "请输入项目名称",
+      script: "请选择 package.json 中存在的启动脚本",
+      port: "端口必须在 1 到 65535 之间",
+      remotePort: "请输入有效的远程端口",
+      domain: "请输入访问域名"
+    },
+    message: {
+      scanned: "项目扫描完成",
+      saved: "项目配置已保存",
+      started: "服务已启动",
+      stopped: "服务已停止",
+      restarted: "服务已重启",
+      proxyCreated: "FRP 代理已创建"
     }
   },
   home: {
@@ -352,6 +415,8 @@ export default {
     }
   },
   common: {
+    name: "名称",
+    cancel: "取消",
     yes: "是",
     no: "否",
     modify: "修改",

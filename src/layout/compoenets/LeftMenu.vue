@@ -112,6 +112,7 @@ onMounted(() => {
       <li
         v-for="r in routes"
         :key="r.name"
+        :title="$t(r.meta?.title as string)"
         :data-step="guideSteps[r.name]?.step"
         :data-intro="guideSteps[r.name]?.intro"
         :data-disable-interaction="true"

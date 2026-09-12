@@ -2,6 +2,7 @@ import { addIcon } from "@iconify/vue/dist/offline";
 
 import Cloud from "@iconify-icons/material-symbols/cloud";
 import Download from "@iconify-icons/material-symbols/download-2";
+import Dns from "@iconify-icons/material-symbols/dns";
 import FileCopySharp from "@iconify-icons/material-symbols/file-copy-sharp";
 import InfoSharp from "@iconify-icons/material-symbols/info-sharp";
 import refreshRounded from "@iconify-icons/material-symbols/refresh-rounded";
@@ -49,6 +50,7 @@ import volunteerActivismSharp from "@iconify-icons/material-symbols/volunteer-ac
 addIcon("cloud", Cloud);
 addIcon("rocket-launch-rounded", RocketLaunchRounded);
 addIcon("download", Download);
+addIcon("dns", Dns);
 addIcon("settings", Settings);
 addIcon("file-copy-sharp", FileCopySharp);
 addIcon("info-sharp", InfoSharp);

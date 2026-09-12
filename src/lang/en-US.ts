@@ -10,6 +10,9 @@ export default {
     proxy: {
       title: "Proxy"
     },
+    webProjects: {
+      title: "Web Services"
+    },
     download: {
       title: "Download"
     },
@@ -21,6 +24,66 @@ export default {
     },
     about: {
       title: "About"
+    }
+  },
+  webProjects: {
+    root: "Project directory: {path}",
+    refresh: "Scan Projects",
+    emptyTitle: "No Node.js projects found",
+    emptyDescription:
+      "Create a project containing package.json under {path}, then scan again.",
+    status: {
+      running: "Running",
+      stopped: "Stopped",
+      error: "Error",
+      missing: "Missing"
+    },
+    field: {
+      path: "Project Path",
+      script: "Start Script",
+      port: "Service Port",
+      pid: "Process PID",
+      autoStart: "Run when app starts"
+    },
+    action: {
+      start: "Start",
+      stop: "Stop",
+      restart: "Restart",
+      edit: "Configure",
+      log: "Logs",
+      folder: "Folder",
+      open: "Open Service",
+      frp: "Configure FRP",
+      save: "Save"
+    },
+    editTitle: "Configure Web Service",
+    logTitle: "Service Logs: {name}",
+    logEmpty: "No logs yet. Start the service to view its output here.",
+    frpTitle: "Create FRP Proxy for {name}",
+    frp: {
+      type: "Proxy Type",
+      tcp: "TCP Port",
+      http: "HTTP Domain",
+      remotePort: "Remote Port",
+      domain: "Domain",
+      domainPlaceholder: "For example, app.example.com",
+      create: "Create Proxy",
+      hint: "The local address will be set to 127.0.0.1:{port}."
+    },
+    validation: {
+      name: "Enter a project name",
+      script: "Select a start script available in package.json",
+      port: "Port must be between 1 and 65535",
+      remotePort: "Enter a valid remote port",
+      domain: "Enter a domain"
+    },
+    message: {
+      scanned: "Project scan complete",
+      saved: "Project configuration saved",
+      started: "Service started",
+      stopped: "Service stopped",
+      restarted: "Service restarted",
+      proxyCreated: "FRP proxy created"
     }
   },
   home: {
@@ -530,6 +593,8 @@ export default {
     }
   },
   common: {
+    name: "Name",
+    cancel: "Cancel",
     yes: "Y",
     no: "N",
     modify: "Modify",
